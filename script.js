@@ -37,8 +37,40 @@ function salvarNoFirebase(mensagemSucesso) {
 
 // CARREGAMENTO INICIAL
 window.onload = function() {
-  document.getElementById('btn-login').disabled = true;
+  const btnLogin = document.getElementById('btn-login');
+  const msgCarregando = document.getElementById('msg-carregando');
   
+  if (btnLogin) btnLogin.disabled = true;
+  
+  db.collection("sistema").doc("bancoDeDados").get().then((doc) => {
+    if (doc.exists) {
+      const dadosNuvem = doc.data();
+      dados.polos = dadosNuvem.polos || [];
+      dados.turmas = dadosNuvem.turmas || [];
+      dados.professores = dadosNuvem.professores || [];
+      dados.alunos = dadosNuvem.alunos || [];
+      dados.disciplinas = dadosNuvem.disciplinas || [];
+      dados.notas = dadosNuvem.notas || {};
+      dados.credenciais = dadosNuvem.credenciais || { admin: "admin123", secretario: "sec123" };
+    } else {
+      salvarNoFirebase();
+    }
+    
+    if (msgCarregando) msgCarregando.classList.add('oculto');
+    if (btnLogin) btnLogin.disabled = false;
+    
+    preencherAnosIngresso();
+    renderizarListasAdmin();
+    atualizarOpcoesLogin();
+  }).catch((error) => {
+    console.error("Erro ao conectar no banco:", error);
+    if (msgCarregando) {
+      msgCarregando.innerText = "Erro ao conectar ao banco de dados. Verifique as Regras do Firebase.";
+      msgCarregando.style.color = "red";
+    }
+    if (btnLogin) btnLogin.disabled = false;
+  });
+};  
   db.collection("sistema").doc("bancoDeDados").get().then((doc) => {
     if (doc.exists) {
       const dadosNuvem = doc.data();
