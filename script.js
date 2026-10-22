@@ -158,152 +158,8 @@ function configurarTelaAdmin(nomePerfil) {
     boxProf.style.display = 'block';
   }
 
-  renderizarListasAdmin();
-}
-
-function deslogar() {
-  usuarioLogado = null;
-  document.getElementById('usuario-input').value = '';
-  document.getElementById('senha-input').value = '';
-  document.getElementById('tela-admin').classList.add('oculto');
-  document.getElementById('tela-professor').classList.add('oculto');
-  document.getElementById('tela-aluno').classList.add('oculto');
-  document.getElementById('tela-login').classList.remove('oculto');
-}
-
-// ----------------- CADASTROS -----------------
-
-function cadastrarPolo() {
-  const nome = document.getElementById('cad-polo-nome').value.trim();
-  if (!nome) return alert('Digite o nome do polo!');
-  
-  dados.polos.push(nome);
-  document.getElementById('cad-polo-nome').value = '';
-  renderizarListasAdmin();
-  salvarNoFirebase('Polo cadastrado com sucesso!');
-}
-
-function cadastrarTurma() {
-  const nome = document.getElementById('cad-turma-nome').value.trim();
-  const polo = document.getElementById('cad-turma-polo').value;
-  if (!nome || !polo) return alert('Preencha o nome da turma e selecione o polo!');
-  
-  const novaTurma = {
-    id: Date.now(),
-    nome: nome,
-    polo: polo
-  };
-
-  dados.turmas.push(novaTurma);
-  document.getElementById('cad-turma-nome').value = '';
-  renderizarListasAdmin();
-  salvarNoFirebase('Turma cadastrada com sucesso!');
-}
-
-function cadastrarProfessor() {
-  const nome = document.getElementById('cad-prof-nome').value.trim();
-  if (!nome) return alert('Digite o nome do professor!');
-  
-  dados.professores.push(nome);
-  document.getElementById('cad-prof-nome').value = '';
-  renderizarListasAdmin();
-  salvarNoFirebase('Professor cadastrado com sucesso!');
-}
-
-function cadastrarDisciplina() {
-  const nome = document.getElementById('cad-disc-nome').value.trim();
-  const turmaId = document.getElementById('cad-disc-turma').value;
-  const periodo = document.getElementById('cad-disc-periodo').value;
-  const ano = document.getElementById('cad-disc-ano').value.trim();
-  const semestre = document.getElementById('cad-disc-semestre').value;
-  const ch = document.getElementById('cad-disc-ch').value.trim() || "60";
-  const prof = document.getElementById('cad-disc-prof').value;
-
-  if (!nome || !turmaId || !ano) return alert('Preencha o nome, turma e ano da disciplina!');
-
-  const novaDisc = {
-    id: Date.now(),
-    nome: nome,
-    turmaId: turmaId, // Vinculada à Turma
-    periodo: periodo,
-    ano: ano,
-    semestre: semestre,
-    ch: ch,
-    professor: prof || "A Definir"
-  };
-
-  dados.disciplinas.push(novaDisc);
-  document.getElementById('cad-disc-nome').value = '';
-  document.getElementById('cad-disc-ano').value = '';
-  
-  renderizarListasAdmin();
-  salvarNoFirebase('Disciplina cadastrada com sucesso!');
-}
-
-function cadastrarAluno() {
-  const nome = document.getElementById('cad-aluno-nome').value.trim();
-  const email = document.getElementById('cad-aluno-email').value.trim();
-  const cpf = document.getElementById('cad-aluno-cpf').value.trim();
-  const senha = document.getElementById('cad-aluno-senha').value.trim();
-  const nascimento = document.getElementById('cad-aluno-nascimento').value;
-  const polo = document.getElementById('cad-aluno-polo').value;
-  const turmaId = document.getElementById('cad-aluno-turma').value; // Salva o ID da Turma
-  const nacionalidade = document.getElementById('cad-aluno-nacionalidade').value;
-  const natCidade = document.getElementById('cad-aluno-nat-cidade').value.trim();
-  const natTipo = document.getElementById('cad-aluno-nat-tipo').value;
-  const natUf = document.getElementById('cad-aluno-nat-uf').value.trim();
-  const sexo = document.getElementById('cad-aluno-sexo').value;
-  const pai = document.getElementById('cad-aluno-pai').value.trim();
-  const mae = document.getElementById('cad-aluno-mae').value.trim();
-  const ingresso = document.getElementById('cad-aluno-ingresso').value;
-  const anoIngresso = document.getElementById('cad-aluno-ano-ingresso').value;
-  const semestreIngresso = document.getElementById('cad-aluno-semestre-ingresso').value;
-
-  if (!nome || !cpf || !senha || !polo || !turmaId) {
-    return alert('Preencha Nome, CPF, Senha, Polo e Turma!');
-  }
-
-  if (senha.length > 8) {
-    return alert('A senha deve ter no máximo 8 caracteres!');
-  }
-
-  const agora = new Date();
-  const ano = agora.getFullYear().toString();
-  const mes = String(agora.getMonth() + 1).padStart(2, '0');
-  const cpfLimpo = cpf.replace(/\D/g, '');
-  const cincoCpf = cpfLimpo.substring(0, 5).padEnd(5, '0');
-  
-  const matricula = `${ano}${mes}${cincoCpf}`;
-
-  const novoAluno = {
-    matricula: matricula,
-    nome: nome,
-    email: email,
-    cpf: cpf,
-    senha: senha,
-    nascimento: nascimento,
-    polo: polo,
-    turma: turmaId, // Guarda o ID da turma
-    nacionalidade: nacionalidade,
-    naturalidade: `${natCidade} - ${natTipo}: ${natUf}`,
-    sexo: sexo,
-    pai: pai,
-    mae: mae,
-    ingresso: ingresso,
-    anoSemestreIngresso: `${anoIngresso}.${semestreIngresso}`
-  };
-
-  dados.alunos.push(novoAluno);
-
-  // Limpar formulário
-  document.querySelectorAll('.grid-form-aluno input').forEach(input => input.value = '');
-
-  renderizarListasAdmin();
-  salvarNoFirebase(`Aluno cadastrado com sucesso!\nMatrícula Gerada: ${matricula}`);
-}
-
-function renderizarListasAdmin() {
-  // ATUALIZA SELECTS DE POLOS
+  function renderizarListasAdmin() {
+  // POLOS
   const ulPolo = document.getElementById('lista-polos');
   const selTurmaPolo = document.getElementById('cad-turma-polo');
   const selAlunoPolo = document.getElementById('cad-aluno-polo');
@@ -318,7 +174,7 @@ function renderizarListasAdmin() {
     selAlunoPolo.innerHTML += `<option value="${polo}">${polo}</option>`;
   });
 
-  // ATUALIZA SELECTS DE TURMAS
+  // TURMAS
   const ulTurma = document.getElementById('lista-turmas');
   const selDiscTurma = document.getElementById('cad-disc-turma');
   const selAlunoTurma = document.getElementById('cad-aluno-turma');
@@ -333,29 +189,35 @@ function renderizarListasAdmin() {
     selAlunoTurma.innerHTML += `<option value="${t.id}">${t.nome}</option>`;
   });
 
-  // ATUALIZA SELECTS DE PROFESSORES
+  // PROFESSORES
   const ulProf = document.getElementById('lista-professores');
   const selectProf = document.getElementById('cad-disc-prof');
   ulProf.innerHTML = '';
   selectProf.innerHTML = '<option value="">Selecione o Professor (Opcional)</option>';
 
   dados.professores.forEach(prof => {
-    ulProf.innerHTML += `<li>${prof}</li>`;
-    selectProf.innerHTML += `<option value="${prof}">${prof}</option>`;
+    const nome = typeof prof === 'string' ? prof : prof.nome;
+    ulProf.innerHTML += `<li>${nome}</li>`;
+    selectProf.innerHTML += `<option value="${nome}">${nome}</option>`;
   });
 
-  // LISTA DE ALUNOS
+  // ALUNOS (Com botão de Excluir)
   const ulAluno = document.getElementById('lista-alunos');
   ulAluno.innerHTML = '';
   if (dados.alunos.length === 0) {
     ulAluno.innerHTML = '<li><em>Nenhum aluno cadastrado.</em></li>';
   } else {
     dados.alunos.forEach(a => {
-      ulAluno.innerHTML += `<li><strong>Matrícula: ${a.matricula}</strong> - ${a.nome} (CPF: ${a.cpf})</li>`;
+      ulAluno.innerHTML += `
+        <li style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <span><strong>Mat: ${a.matricula}</strong> - ${a.nome} | 🔑 Senha: <strong>${a.senha}</strong></span>
+          <button class="btn-sair" style="padding: 3px 8px; font-size: 11px; margin-left: 10px;" onclick="excluirAluno('${a.matricula}')">Excluir</button>
+        </li>
+      `;
     });
   }
 
-  // LISTA DE DISCIPLINAS
+  // DISCIPLINAS
   const ulDisc = document.getElementById('lista-disciplinas');
   ulDisc.innerHTML = '';
   if (dados.disciplinas.length === 0) {
@@ -368,7 +230,6 @@ function renderizarListasAdmin() {
     });
   }
 }
-
 // PROFESSOR / SECRETÁRIO / ADMIN - LANÇAMENTO DE NOTA FINAL
 function carregarSelectDisciplinasProf(nomeProf) {
   const select = document.getElementById('prof-disciplina-select');
