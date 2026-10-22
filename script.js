@@ -1,5 +1,19 @@
-// BANCO DE DADOS LOCAL
-let dados = JSON.parse(localStorage.getItem('bethakam_zero_db')) || {
+// CONFIGURAÇÃO REAL DO FIREBASE BETHAKAM
+const firebaseConfig = {
+  apiKey: "AIzaSyDs09lCBfgpfkfRrH97DHWg6dD_6XVEa7c",
+  authDomain: "bethakam-pet.firebaseapp.com",
+  projectId: "bethakam-pet",
+  storageBucket: "bethakam-pet.firebasestorage.app",
+  messagingSenderId: "87176942051",
+  appId: "1:87176942051:web:6ee27387e14470d673d0d6"
+};
+
+// INICIALIZANDO O FIREBASE E O BANCO DE DADOS
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+// VARIÁVEL QUE GUARDA TUDO NO SISTEMA
+let dados = {
   professores: [],
   alunos: [],
   disciplinas: [],
@@ -8,15 +22,39 @@ let dados = JSON.parse(localStorage.getItem('bethakam_zero_db')) || {
 
 let usuarioLogado = null;
 
-function salvarNoLocalStorage() {
-  localStorage.setItem('bethakam_zero_db', JSON.stringify(dados));
+// FUNÇÃO MÁGICA QUE SALVA NA NUVEM
+function salvarNoFirebase(mensagemSucesso) {
+  db.collection("sistema").doc("bancoDeDados").set(dados)
+    .then(() => {
+      if(mensagemSucesso) alert(mensagemSucesso);
+    })
+    .catch((error) => {
+      alert("Erro ao salvar na nuvem: " + error);
+    });
 }
 
-// CARREGAMENTO INICIAL
+// CARREGAMENTO INICIAL: BUSCA OS DADOS DA NUVEM ANTES DE ABRIR O SISTEMA
 window.onload = function() {
-  preencherAnosIngresso();
-  renderizarListasAdmin();
-  atualizarOpcoesLogin();
+  document.getElementById('btn-login').disabled = true; // Bloqueia login até carregar
+  
+  db.collection("sistema").doc("bancoDeDados").get().then((doc) => {
+    if (doc.exists) {
+      dados = doc.data(); // Puxa os dados salvos!
+    } else {
+      salvarNoFirebase(); // Cria o banco pela primeira vez se não existir
+    }
+    
+    // Libera o sistema
+    document.getElementById('msg-carregando').classList.add('oculto');
+    document.getElementById('btn-login').disabled = false;
+    
+    preencherAnosIngresso();
+    renderizarListasAdmin();
+    atualizarOpcoesLogin();
+  }).catch((error) => {
+    console.error("Erro ao conectar no banco:", error);
+    document.getElementById('msg-carregando').innerText = "Erro de conexão. Verifique sua internet.";
+  });
 };
 
 function preencherAnosIngresso() {
@@ -65,7 +103,6 @@ function fazerLogin() {
   }
 
   if (perfil === 'admin') {
-    // Validação do Administrador (Usuário: admin / Senha: admin123)
     if (usuario.toLowerCase() === 'admin' && senha === 'admin123') {
       usuarioLogado = { perfil: 'admin' };
       document.getElementById('tela-login').classList.add('oculto');
@@ -74,7 +111,6 @@ function fazerLogin() {
       alert("Usuário ou senha de Administrador incorretos!");
     }
   } else if (perfil === 'secretario') {
-    // Validação do Secretário (Usuário: secretario / Senha: sec123)
     if (usuario.toLowerCase() === 'secretario' && senha === 'sec123') {
       usuarioLogado = { perfil: 'secretario' };
       document.getElementById('tela-login').classList.add('oculto');
@@ -133,10 +169,11 @@ function cadastrarProfessor() {
   if (!nome) return alert('Digite o nome do professor!');
   
   dados.professores.push(nome);
-  salvarNoLocalStorage();
-  document.getElementById('cad-prof-nome').value = '';
   renderizarListasAdmin();
-  alert('Professor cadastrado com sucesso!');
+  document.getElementById('cad-prof-nome').value = '';
+  
+  // Salva na nuvem
+  salvarNoFirebase('Professor cadastrado com sucesso na nuvem!');
 }
 
 function cadastrarAluno() {
@@ -193,7 +230,6 @@ function cadastrarAluno() {
   };
 
   dados.alunos.push(novoAluno);
-  salvarNoLocalStorage();
 
   document.getElementById('cad-aluno-nome').value = '';
   document.getElementById('cad-aluno-email').value = '';
@@ -208,7 +244,9 @@ function cadastrarAluno() {
   document.getElementById('cad-aluno-mae').value = '';
 
   renderizarListasAdmin();
-  alert(`Aluno cadastrado com sucesso!\nMatrícula Gerada: ${matricula}`);
+  
+  // Salva na nuvem
+  salvarNoFirebase(`Aluno cadastrado com sucesso na nuvem!\nMatrícula Gerada: ${matricula}`);
 }
 
 function cadastrarDisciplina() {
@@ -228,12 +266,13 @@ function cadastrarDisciplina() {
   };
 
   dados.disciplinas.push(novaDisc);
-  salvarNoLocalStorage();
-  
   document.getElementById('cad-disc-nome').value = '';
   document.getElementById('cad-disc-ch').value = '';
+  
   renderizarListasAdmin();
-  alert('Disciplina cadastrada com sucesso!');
+  
+  // Salva na nuvem
+  salvarNoFirebase('Disciplina cadastrada com sucesso na nuvem!');
 }
 
 function renderizarListasAdmin() {
@@ -340,8 +379,8 @@ function salvarNotasProfessor() {
     }
   });
 
-  salvarNoLocalStorage();
-  alert('Nota Final e Situação salvas com sucesso!');
+  // Salva na nuvem
+  salvarNoFirebase('Nota Final e Situação salvas com sucesso na nuvem!');
 }
 
 // VISUALIZAÇÃO DO HISTÓRICO DO ALUNO
