@@ -1,4 +1,4 @@
-// CONFIGURAÇÃO REAL DO FIREBASE BETHAKAM
+// A SUA CHAVE DO FIREBASE
 const firebaseConfig = {
   apiKey: "AIzaSyDs09lCBfgpfkfRrH97DHWg6dD_6XVEa7c",
   authDomain: "bethakam-pet.firebaseapp.com",
@@ -14,6 +14,8 @@ const db = firebase.firestore();
 
 // VARIÁVEL QUE GUARDA TUDO NO SISTEMA
 let dados = {
+  polos: [],         // NOVO: Guarda os Polos
+  turmas: [],        // NOVO: Guarda as Turmas vinculadas aos Polos
   professores: [],
   alunos: [],
   disciplinas: [],
@@ -33,18 +35,24 @@ function salvarNoFirebase(mensagemSucesso) {
     });
 }
 
-// CARREGAMENTO INICIAL: BUSCA OS DADOS DA NUVEM ANTES DE ABRIR O SISTEMA
+// CARREGAMENTO INICIAL
 window.onload = function() {
-  document.getElementById('btn-login').disabled = true; // Bloqueia login até carregar
+  document.getElementById('btn-login').disabled = true;
   
   db.collection("sistema").doc("bancoDeDados").get().then((doc) => {
     if (doc.exists) {
-      dados = doc.data(); // Puxa os dados salvos!
+      const dadosNuvem = doc.data();
+      // Garante que as listas novas existam, mesmo em bancos antigos
+      dados.polos = dadosNuvem.polos || [];
+      dados.turmas = dadosNuvem.turmas || [];
+      dados.professores = dadosNuvem.professores || [];
+      dados.alunos = dadosNuvem.alunos || [];
+      dados.disciplinas = dadosNuvem.disciplinas || [];
+      dados.notas = dadosNuvem.notas || {};
     } else {
-      salvarNoFirebase(); // Cria o banco pela primeira vez se não existir
+      salvarNoFirebase();
     }
     
-    // Libera o sistema
     document.getElementById('msg-carregando').classList.add('oculto');
     document.getElementById('btn-login').disabled = false;
     
@@ -163,17 +171,73 @@ function deslogar() {
   document.getElementById('tela-login').classList.remove('oculto');
 }
 
-// CADASTROS
+// ----------------- CADASTROS -----------------
+
+function cadastrarPolo() {
+  const nome = document.getElementById('cad-polo-nome').value.trim();
+  if (!nome) return alert('Digite o nome do polo!');
+  
+  dados.polos.push(nome);
+  document.getElementById('cad-polo-nome').value = '';
+  renderizarListasAdmin();
+  salvarNoFirebase('Polo cadastrado com sucesso!');
+}
+
+function cadastrarTurma() {
+  const nome = document.getElementById('cad-turma-nome').value.trim();
+  const polo = document.getElementById('cad-turma-polo').value;
+  if (!nome || !polo) return alert('Preencha o nome da turma e selecione o polo!');
+  
+  const novaTurma = {
+    id: Date.now(),
+    nome: nome,
+    polo: polo
+  };
+
+  dados.turmas.push(novaTurma);
+  document.getElementById('cad-turma-nome').value = '';
+  renderizarListasAdmin();
+  salvarNoFirebase('Turma cadastrada com sucesso!');
+}
+
 function cadastrarProfessor() {
   const nome = document.getElementById('cad-prof-nome').value.trim();
   if (!nome) return alert('Digite o nome do professor!');
   
   dados.professores.push(nome);
-  renderizarListasAdmin();
   document.getElementById('cad-prof-nome').value = '';
+  renderizarListasAdmin();
+  salvarNoFirebase('Professor cadastrado com sucesso!');
+}
+
+function cadastrarDisciplina() {
+  const nome = document.getElementById('cad-disc-nome').value.trim();
+  const turmaId = document.getElementById('cad-disc-turma').value;
+  const periodo = document.getElementById('cad-disc-periodo').value;
+  const ano = document.getElementById('cad-disc-ano').value.trim();
+  const semestre = document.getElementById('cad-disc-semestre').value;
+  const ch = document.getElementById('cad-disc-ch').value.trim() || "60";
+  const prof = document.getElementById('cad-disc-prof').value;
+
+  if (!nome || !turmaId || !ano) return alert('Preencha o nome, turma e ano da disciplina!');
+
+  const novaDisc = {
+    id: Date.now(),
+    nome: nome,
+    turmaId: turmaId, // Vinculada à Turma
+    periodo: periodo,
+    ano: ano,
+    semestre: semestre,
+    ch: ch,
+    professor: prof || "A Definir"
+  };
+
+  dados.disciplinas.push(novaDisc);
+  document.getElementById('cad-disc-nome').value = '';
+  document.getElementById('cad-disc-ano').value = '';
   
-  // Salva na nuvem
-  salvarNoFirebase('Professor cadastrado com sucesso na nuvem!');
+  renderizarListasAdmin();
+  salvarNoFirebase('Disciplina cadastrada com sucesso!');
 }
 
 function cadastrarAluno() {
@@ -182,8 +246,8 @@ function cadastrarAluno() {
   const cpf = document.getElementById('cad-aluno-cpf').value.trim();
   const senha = document.getElementById('cad-aluno-senha').value.trim();
   const nascimento = document.getElementById('cad-aluno-nascimento').value;
-  const polo = document.getElementById('cad-aluno-polo').value.trim();
-  const turma = document.getElementById('cad-aluno-turma').value.trim();
+  const polo = document.getElementById('cad-aluno-polo').value;
+  const turmaId = document.getElementById('cad-aluno-turma').value; // Salva o ID da Turma
   const nacionalidade = document.getElementById('cad-aluno-nacionalidade').value;
   const natCidade = document.getElementById('cad-aluno-nat-cidade').value.trim();
   const natTipo = document.getElementById('cad-aluno-nat-tipo').value;
@@ -195,8 +259,8 @@ function cadastrarAluno() {
   const anoIngresso = document.getElementById('cad-aluno-ano-ingresso').value;
   const semestreIngresso = document.getElementById('cad-aluno-semestre-ingresso').value;
 
-  if (!nome || !cpf || !senha) {
-    return alert('Preencha pelo menos Nome, CPF e Senha do aluno!');
+  if (!nome || !cpf || !senha || !polo || !turmaId) {
+    return alert('Preencha Nome, CPF, Senha, Polo e Turma!');
   }
 
   if (senha.length > 8) {
@@ -219,7 +283,7 @@ function cadastrarAluno() {
     senha: senha,
     nascimento: nascimento,
     polo: polo,
-    turma: turma,
+    turma: turmaId, // Guarda o ID da turma
     nacionalidade: nacionalidade,
     naturalidade: `${natCidade} - ${natTipo}: ${natUf}`,
     sexo: sexo,
@@ -231,51 +295,45 @@ function cadastrarAluno() {
 
   dados.alunos.push(novoAluno);
 
-  document.getElementById('cad-aluno-nome').value = '';
-  document.getElementById('cad-aluno-email').value = '';
-  document.getElementById('cad-aluno-cpf').value = '';
-  document.getElementById('cad-aluno-senha').value = '';
-  document.getElementById('cad-aluno-nascimento').value = '';
-  document.getElementById('cad-aluno-polo').value = '';
-  document.getElementById('cad-aluno-turma').value = '';
-  document.getElementById('cad-aluno-nat-cidade').value = '';
-  document.getElementById('cad-aluno-nat-uf').value = '';
-  document.getElementById('cad-aluno-pai').value = '';
-  document.getElementById('cad-aluno-mae').value = '';
+  // Limpar formulário
+  document.querySelectorAll('.grid-form-aluno input').forEach(input => input.value = '');
 
   renderizarListasAdmin();
-  
-  // Salva na nuvem
-  salvarNoFirebase(`Aluno cadastrado com sucesso na nuvem!\nMatrícula Gerada: ${matricula}`);
-}
-
-function cadastrarDisciplina() {
-  const nome = document.getElementById('cad-disc-nome').value.trim();
-  const periodo = document.getElementById('cad-disc-periodo').value;
-  const ch = document.getElementById('cad-disc-ch').value.trim() || "60";
-  const prof = document.getElementById('cad-disc-prof').value;
-
-  if (!nome) return alert('Preencha o nome da disciplina!');
-
-  const novaDisc = {
-    id: Date.now(),
-    nome: nome,
-    periodo: periodo,
-    ch: ch,
-    professor: prof || "A Definir"
-  };
-
-  dados.disciplinas.push(novaDisc);
-  document.getElementById('cad-disc-nome').value = '';
-  document.getElementById('cad-disc-ch').value = '';
-  
-  renderizarListasAdmin();
-  
-  // Salva na nuvem
-  salvarNoFirebase('Disciplina cadastrada com sucesso na nuvem!');
+  salvarNoFirebase(`Aluno cadastrado com sucesso!\nMatrícula Gerada: ${matricula}`);
 }
 
 function renderizarListasAdmin() {
+  // ATUALIZA SELECTS DE POLOS
+  const ulPolo = document.getElementById('lista-polos');
+  const selTurmaPolo = document.getElementById('cad-turma-polo');
+  const selAlunoPolo = document.getElementById('cad-aluno-polo');
+  
+  ulPolo.innerHTML = '';
+  selTurmaPolo.innerHTML = '<option value="">Selecione o Polo primeiro</option>';
+  selAlunoPolo.innerHTML = '<option value="">Selecione o Polo</option>';
+  
+  dados.polos.forEach(polo => {
+    ulPolo.innerHTML += `<li>${polo}</li>`;
+    selTurmaPolo.innerHTML += `<option value="${polo}">${polo}</option>`;
+    selAlunoPolo.innerHTML += `<option value="${polo}">${polo}</option>`;
+  });
+
+  // ATUALIZA SELECTS DE TURMAS
+  const ulTurma = document.getElementById('lista-turmas');
+  const selDiscTurma = document.getElementById('cad-disc-turma');
+  const selAlunoTurma = document.getElementById('cad-aluno-turma');
+
+  ulTurma.innerHTML = '';
+  selDiscTurma.innerHTML = '<option value="">Selecione a Turma</option>';
+  selAlunoTurma.innerHTML = '<option value="">Selecione a Turma</option>';
+
+  dados.turmas.forEach(t => {
+    ulTurma.innerHTML += `<li>${t.nome} (Polo: ${t.polo})</li>`;
+    selDiscTurma.innerHTML += `<option value="${t.id}">${t.nome}</option>`;
+    selAlunoTurma.innerHTML += `<option value="${t.id}">${t.nome}</option>`;
+  });
+
+  // ATUALIZA SELECTS DE PROFESSORES
   const ulProf = document.getElementById('lista-professores');
   const selectProf = document.getElementById('cad-disc-prof');
   ulProf.innerHTML = '';
@@ -286,6 +344,7 @@ function renderizarListasAdmin() {
     selectProf.innerHTML += `<option value="${prof}">${prof}</option>`;
   });
 
+  // LISTA DE ALUNOS
   const ulAluno = document.getElementById('lista-alunos');
   ulAluno.innerHTML = '';
   if (dados.alunos.length === 0) {
@@ -296,13 +355,16 @@ function renderizarListasAdmin() {
     });
   }
 
+  // LISTA DE DISCIPLINAS
   const ulDisc = document.getElementById('lista-disciplinas');
   ulDisc.innerHTML = '';
   if (dados.disciplinas.length === 0) {
     ulDisc.innerHTML = '<li><em>Nenhuma disciplina cadastrada.</em></li>';
   } else {
     dados.disciplinas.forEach(d => {
-      ulDisc.innerHTML += `<li>P${d.periodo} - ${d.nome} (${d.ch}h) - Prof: ${d.professor}</li>`;
+      const turmaObj = dados.turmas.find(t => t.id == d.turmaId);
+      const nomeTurma = turmaObj ? turmaObj.nome : "Sem Turma";
+      ulDisc.innerHTML += `<li>[${d.ano}.${d.semestre}] P${d.periodo} - ${d.nome} (Turma: ${nomeTurma})</li>`;
     });
   }
 }
@@ -315,7 +377,9 @@ function carregarSelectDisciplinasProf(nomeProf) {
   const discDoProf = dados.disciplinas.filter(d => d.professor.toLowerCase() === nomeProf.toLowerCase() || nomeProf === "");
 
   discDoProf.forEach(d => {
-    select.innerHTML += `<option value="${d.id}">${d.nome} (Período ${d.periodo})</option>`;
+    const turmaObj = dados.turmas.find(t => t.id == d.turmaId);
+    const nomeTurma = turmaObj ? turmaObj.nome : "Sem Turma";
+    select.innerHTML += `<option value="${d.id}">${d.nome} - ${nomeTurma} (${d.ano}.${d.semestre})</option>`;
   });
 }
 
@@ -328,16 +392,20 @@ function carregarTurmaProfessor() {
     return;
   }
 
+  const disciplinaSelecionada = dados.disciplinas.find(d => d.id == discId);
   area.classList.remove('oculto');
   const corpo = document.getElementById('corpo-tabela-prof');
   corpo.innerHTML = '';
 
-  if (dados.alunos.length === 0) {
-    corpo.innerHTML = `<tr><td colspan="4">Nenhum aluno cadastrado no sistema.</td></tr>`;
+  // Exibe apenas os alunos que pertencem à turma vinculada a esta disciplina
+  const alunosDaTurma = dados.alunos.filter(a => a.turma == disciplinaSelecionada.turmaId);
+
+  if (alunosDaTurma.length === 0) {
+    corpo.innerHTML = `<tr><td colspan="4">Nenhum aluno matriculado nesta turma.</td></tr>`;
     return;
   }
 
-  dados.alunos.forEach(aluno => {
+  alunosDaTurma.forEach(aluno => {
     const chave = `${aluno.matricula}_${discId}`;
     const registro = dados.notas[chave] || { notaFinal: '', situacao: 'APVD' };
 
@@ -362,8 +430,10 @@ function carregarTurmaProfessor() {
 
 function salvarNotasProfessor() {
   const discId = document.getElementById('prof-disciplina-select').value;
+  const disciplinaSelecionada = dados.disciplinas.find(d => d.id == discId);
+  const alunosDaTurma = dados.alunos.filter(a => a.turma == disciplinaSelecionada.turmaId);
 
-  dados.alunos.forEach(aluno => {
+  alunosDaTurma.forEach(aluno => {
     const inputNota = document.querySelector(`.input-notafinal[data-mat="${aluno.matricula}"]`);
     const selectSit = document.querySelector(`.select-sitfinal[data-mat="${aluno.matricula}"]`);
 
@@ -379,14 +449,12 @@ function salvarNotasProfessor() {
     }
   });
 
-  // Salva na nuvem
   salvarNoFirebase('Nota Final e Situação salvas com sucesso na nuvem!');
 }
 
 // VISUALIZAÇÃO DO HISTÓRICO DO ALUNO
 function carregarHistoricoAluno(matricula) {
   const aluno = dados.alunos.find(a => a.matricula === matricula);
-
   if (!aluno) return;
 
   document.getElementById('hist-aluno-mat').innerText = aluno.matricula;
@@ -402,14 +470,19 @@ function carregarHistoricoAluno(matricula) {
   document.getElementById('hist-aluno-ingresso').innerText = aluno.ingresso || "-";
   document.getElementById('hist-aluno-ano-semestre').innerText = aluno.anoSemestreIngresso || "-";
 
+  // Busca o nome da Turma baseada no ID salvo no aluno
+  const turmaObj = dados.turmas.find(t => t.id == aluno.turma);
   document.getElementById('hist-polo-header').innerText = aluno.polo || "NÃO INFORMADO";
-  document.getElementById('hist-turma-header').innerText = aluno.turma || "NÃO INFORMADA";
+  document.getElementById('hist-turma-header').innerText = turmaObj ? turmaObj.nome : "NÃO INFORMADA";
 
   const corpo = document.getElementById('corpo-tabela-historico');
   corpo.innerHTML = '';
 
+  // Filtra APENAS as disciplinas que pertencem à Turma deste aluno
+  const disciplinasDaTurma = dados.disciplinas.filter(d => d.turmaId == aluno.turma);
+
   for (let p = 1; p <= 8; p++) {
-    const disciplinasDoPeriodo = dados.disciplinas.filter(d => d.periodo == p);
+    const disciplinasDoPeriodo = disciplinasDaTurma.filter(d => d.periodo == p);
 
     corpo.innerHTML += `
       <tr>
@@ -439,7 +512,8 @@ function carregarHistoricoAluno(matricula) {
 
         corpo.innerHTML += `
           <tr>
-            <td>${aluno.anoSemestreIngresso || '-'}</td>
+            <!-- AQUI ESTÁ A MÁGICA: O Ano e Semestre puxados da Disciplina! -->
+            <td>${disc.ano}.${disc.semestre}</td> 
             <td>${disc.id}</td>
             <td style="text-align:left;">${disc.nome}</td>
             <td>${disc.ch}h</td>
