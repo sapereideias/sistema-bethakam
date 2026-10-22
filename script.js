@@ -525,3 +525,26 @@ function carregarHistoricoAluno(matricula) {
     }
   }
 }
+// FUNÇÃO PARA EXCLUIR ALUNO
+function excluirAluno(matricula) {
+  const aluno = dados.alunos.find(a => a.matricula === matricula);
+  if (!aluno) return;
+
+  // Pede confirmação antes de apagar
+  const confirmacao = confirm(`Tem certeza que deseja excluir o aluno ${aluno.nome} (Matrícula: ${matricula})?`);
+  if (!confirmacao) return;
+
+  // 1. Remove o aluno da lista
+  dados.alunos = dados.alunos.filter(a => a.matricula !== matricula);
+
+  // 2. Remove as notas associadas a este aluno
+  Object.keys(dados.notas).forEach(chave => {
+    if (chave.startsWith(`${matricula}_`)) {
+      delete dados.notas[chave];
+    }
+  });
+
+  // 3. Atualiza a lista na tela e salva a alteração no Firebase
+  renderizarListasAdmin();
+  salvarNoFirebase("Aluno excluído com sucesso da nuvem!");
+}
