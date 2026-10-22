@@ -35,77 +35,64 @@ function salvarNoFirebase(mensagemSucesso) {
     });
 }
 
-// CARREGAMENTO INICIAL
+// CARREGAMENTO COM TIMER DE SEGURANÇA (NUNCA TRAVA A TELA)
 window.onload = function() {
   const btnLogin = document.getElementById('btn-login');
   const msgCarregando = document.getElementById('msg-carregando');
   
-  if (btnLogin) btnLogin.disabled = true;
-  
-  db.collection("sistema").doc("bancoDeDados").get().then((doc) => {
-    if (doc.exists) {
-      const dadosNuvem = doc.data();
-      dados.polos = dadosNuvem.polos || [];
-      dados.turmas = dadosNuvem.turmas || [];
-      dados.professores = dadosNuvem.professores || [];
-      dados.alunos = dadosNuvem.alunos || [];
-      dados.disciplinas = dadosNuvem.disciplinas || [];
-      dados.notas = dadosNuvem.notas || {};
-      dados.credenciais = dadosNuvem.credenciais || { admin: "admin123", secretario: "sec123" };
-    } else {
-      salvarNoFirebase();
+  // 1. Timer de 3 segundos: Se o Firebase demorar, destrava o sistema automaticamente!
+  const timerSeguranca = setTimeout(() => {
+    if (msgCarregando) {
+      msgCarregando.innerText = "Modo de Teste / Local Ativado";
+      msgCarregando.style.color = "#d9534f";
     }
-    
+    if (btnLogin) btnLogin.disabled = false;
+    preencherAnosIngresso();
+    atualizarOpcoesLogin();
+  }, 3000);
+
+  try {
+    // 2. Tenta conectar ao Firebase
+    db.collection("sistema").doc("bancoDeDados").get().then((doc) => {
+      clearTimeout(timerSeguranca); // Cancela o timer porque a nuvem respondeu!
+      
+      if (doc.exists) {
+        const dadosNuvem = doc.data();
+        dados.polos = dadosNuvem.polos || [];
+        dados.turmas = dadosNuvem.turmas || [];
+        dados.professores = dadosNuvem.professores || [];
+        dados.alunos = dadosNuvem.alunos || [];
+        dados.disciplinas = dadosNuvem.disciplinas || [];
+        dados.notas = dadosNuvem.notas || {};
+        dados.credenciais = dadosNuvem.credenciais || { admin: "admin123", secretario: "sec123" };
+      } else {
+        salvarNoFirebase();
+      }
+      
+      if (msgCarregando) msgCarregando.classList.add('oculto');
+      if (btnLogin) btnLogin.disabled = false;
+      
+      preencherAnosIngresso();
+      renderizarListasAdmin();
+      atualizarOpcoesLogin();
+    }).catch((error) => {
+      clearTimeout(timerSeguranca);
+      console.error("Erro Firebase:", error);
+      if (msgCarregando) msgCarregando.classList.add('oculto');
+      if (btnLogin) btnLogin.disabled = false;
+      preencherAnosIngresso();
+      atualizarOpcoesLogin();
+    });
+  } catch (err) {
+    clearTimeout(timerSeguranca);
+    console.error("Erro no Script:", err);
     if (msgCarregando) msgCarregando.classList.add('oculto');
     if (btnLogin) btnLogin.disabled = false;
-    
     preencherAnosIngresso();
-    renderizarListasAdmin();
     atualizarOpcoesLogin();
-  }).catch((error) => {
-    console.error("Erro ao conectar no banco:", error);
-    if (msgCarregando) {
-      msgCarregando.innerText = "Erro ao conectar ao banco de dados. Verifique as Regras do Firebase.";
-      msgCarregando.style.color = "red";
-    }
-    if (btnLogin) btnLogin.disabled = false;
-  });
-};  
-  db.collection("sistema").doc("bancoDeDados").get().then((doc) => {
-    if (doc.exists) {
-      const dadosNuvem = doc.data();
-      // Garante que as listas novas existam, mesmo em bancos antigos
-      dados.polos = dadosNuvem.polos || [];
-      dados.turmas = dadosNuvem.turmas || [];
-      dados.professores = dadosNuvem.professores || [];
-      dados.alunos = dadosNuvem.alunos || [];
-      dados.disciplinas = dadosNuvem.disciplinas || [];
-      dados.notas = dadosNuvem.notas || {};
-    } else {
-      salvarNoFirebase();
-    }
-    
-    document.getElementById('msg-carregando').classList.add('oculto');
-    document.getElementById('btn-login').disabled = false;
-    
-    preencherAnosIngresso();
-function renderizarListasAdmin() {
-  // POLOS
-  const ulPolo = document.getElementById('lista-polos');
-  const selTurmaPolo = document.getElementById('cad-turma-polo');
-  const selAlunoPolo = document.getElementById('cad-aluno-polo');
-  
-  ulPolo.innerHTML = '';
-  selTurmaPolo.innerHTML = '<option value="">Selecione o Polo primeiro</option>';
-  selAlunoPolo.innerHTML = '<option value="">Selecione o Polo</option>';
-  
-  dados.polos.forEach(polo => {
-    ulPolo.innerHTML += `<li>${polo}</li>`;
-    selTurmaPolo.innerHTML += `<option value="${polo}">${polo}</option>`;
-    selAlunoPolo.innerHTML += `<option value="${polo}">${polo}</option>`;
-  });
-
-  // TURMAS
+  }
+};
+// TURMAS
   const ulTurma = document.getElementById('lista-turmas');
   const selDiscTurma = document.getElementById('cad-disc-turma');
   const selAlunoTurma = document.getElementById('cad-aluno-turma');
