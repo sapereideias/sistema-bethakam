@@ -35,7 +35,8 @@
       <input type="password" id="senha-input" maxlength="8" placeholder="Digite sua senha">
     </div>
 
-    <button class="btn-principal" onclick="fazerLogin()">Entrar no Sistema</button>
+    <button id="btn-login" class="btn-principal" onclick="fazerLogin()">Entrar no Sistema</button>
+    <p id="msg-carregando" style="text-align: center; color: #003366; font-weight: bold; margin-top: 10px;">Conectando ao Banco de Dados...</p>
   </div>
 
   <!-- PAINEL ADMINISTRADOR E SECRETÁRIO -->
@@ -269,6 +270,11 @@
     </div>
   </div>
 
+  <!-- FIREBASE SCRIPTS (Adicionados aqui!) -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  
+  <!-- O SEU SCRIPT SEMPRE POR ÚLTIMO -->
   <script src="script.js"></script>
 </body>
 </html>
