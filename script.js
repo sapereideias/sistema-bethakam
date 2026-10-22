@@ -57,108 +57,7 @@ window.onload = function() {
     document.getElementById('btn-login').disabled = false;
     
     preencherAnosIngresso();
-    renderizarListasAdmin();
-    atualizarOpcoesLogin();
-  }).catch((error) => {
-    console.error("Erro ao conectar no banco:", error);
-    document.getElementById('msg-carregando').innerText = "Erro de conexão. Verifique sua internet.";
-  });
-};
-
-function preencherAnosIngresso() {
-  const selectAno = document.getElementById('cad-aluno-ano-ingresso');
-  if (!selectAno) return;
-  selectAno.innerHTML = '';
-  const anoAtual = new Date().getFullYear();
-  for (let ano = 2002; ano <= anoAtual; ano++) {
-    selectAno.innerHTML += `<option value="${ano}">${ano}</option>`;
-  }
-}
-
-// NAVEGAÇÃO DE TELA E PERFIS
-function atualizarOpcoesLogin() {
-  const perfil = document.getElementById('perfil-select').value;
-  const labelUsuario = document.getElementById('label-usuario');
-  const inputUsuario = document.getElementById('usuario-input');
-  const inputSenha = document.getElementById('senha-input');
-
-  inputUsuario.value = '';
-  inputSenha.value = '';
-
-  if (perfil === 'admin') {
-    labelUsuario.innerText = "Usuário do Administrador:";
-    inputUsuario.placeholder = "Digite o usuário (ex: admin)";
-  } else if (perfil === 'secretario') {
-    labelUsuario.innerText = "Usuário do Secretário:";
-    inputUsuario.placeholder = "Digite o usuário (ex: secretario)";
-  } else if (perfil === 'professor') {
-    labelUsuario.innerText = "Nome do Professor:";
-    inputUsuario.placeholder = "Digite o nome do Professor";
-  } else if (perfil === 'aluno') {
-    labelUsuario.innerText = "CPF do Aluno:";
-    inputUsuario.placeholder = "Digite seu CPF (apenas números)";
-  }
-}
-
-function fazerLogin() {
-  const perfil = document.getElementById('perfil-select').value;
-  const usuario = document.getElementById('usuario-input').value.trim();
-  const senha = document.getElementById('senha-input').value.trim();
-
-  if (!usuario || !senha) {
-    alert("Por favor, preencha o usuário/CPF e a senha!");
-    return;
-  }
-
-  if (perfil === 'admin') {
-    if (usuario.toLowerCase() === 'admin' && senha === 'admin123') {
-      usuarioLogado = { perfil: 'admin' };
-      document.getElementById('tela-login').classList.add('oculto');
-      configurarTelaAdmin('Administrador');
-    } else {
-      alert("Usuário ou senha de Administrador incorretos!");
-    }
-  } else if (perfil === 'secretario') {
-    if (usuario.toLowerCase() === 'secretario' && senha === 'sec123') {
-      usuarioLogado = { perfil: 'secretario' };
-      document.getElementById('tela-login').classList.add('oculto');
-      configurarTelaAdmin('Secretário');
-    } else {
-      alert("Usuário ou senha de Secretário incorretos!");
-    }
-  } else if (perfil === 'professor') {
-    usuarioLogado = { perfil: 'professor', nome: usuario };
-    document.getElementById('tela-login').classList.add('oculto');
-    document.getElementById('tela-professor').classList.remove('oculto');
-    carregarSelectDisciplinasProf(usuario);
-  } else if (perfil === 'aluno') {
-    const cpfLimpo = usuario.replace(/\D/g, '');
-    const aluno = dados.alunos.find(a => a.cpf.replace(/\D/g, '') === cpfLimpo && a.senha === senha);
-
-    if (!aluno) {
-      alert("CPF ou Senha incorretos!");
-      return;
-    }
-
-    usuarioLogado = { perfil: 'aluno', matricula: aluno.matricula };
-    document.getElementById('tela-login').classList.add('oculto');
-    document.getElementById('tela-aluno').classList.remove('oculto');
-    carregarHistoricoAluno(aluno.matricula);
-  }
-}
-
-function configurarTelaAdmin(nomePerfil) {
-  document.getElementById('tela-admin').classList.remove('oculto');
-  document.getElementById('titulo-painel-gestao').innerText = `Painel de Gestão Acadêmica (${nomePerfil})`;
-  
-  const boxProf = document.getElementById('box-cad-prof');
-  if (nomePerfil === 'Secretário') {
-    boxProf.style.display = 'none';
-  } else {
-    boxProf.style.display = 'block';
-  }
-
-  function renderizarListasAdmin() {
+function renderizarListasAdmin() {
   // POLOS
   const ulPolo = document.getElementById('lista-polos');
   const selTurmaPolo = document.getElementById('cad-turma-polo');
@@ -230,7 +129,7 @@ function configurarTelaAdmin(nomePerfil) {
     });
   }
 }
-// PROFESSOR / SECRETÁRIO / ADMIN - LANÇAMENTO DE NOTA FINAL
+    // PROFESSOR / SECRETÁRIO / ADMIN - LANÇAMENTO DE NOTA FINAL
 function carregarSelectDisciplinasProf(nomeProf) {
   const select = document.getElementById('prof-disciplina-select');
   select.innerHTML = '<option value="">-- Selecione uma disciplina --</option>';
