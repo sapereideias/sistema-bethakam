@@ -1,0 +1,274 @@
+* {
+  box-sizing: border-box;
+  font-family: Arial, Helvetica, sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: #eef2f5;
+  color: #222;
+  padding: 20px;
+}
+
+.oculto {
+  display: none !important;
+}
+
+/* CARDS E PAINÉIS */
+.container-card {
+  background: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  max-width: 480px;
+  margin: 40px auto;
+  padding: 25px;
+}
+
+.container-painel {
+  background: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  max-width: 1100px;
+  margin: 10px auto;
+  padding: 25px;
+}
+
+.topo-painel {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 2px solid #003366;
+  padding-bottom: 12px;
+  margin-bottom: 20px;
+}
+
+.cabecalho-institucional {
+  text-align: center;
+  border-bottom: 1px solid #ccc;
+  padding-bottom: 12px;
+  margin-bottom: 15px;
+}
+
+.cabecalho-institucional h2 {
+  color: #003366;
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.cabecalho-institucional p {
+  color: #444;
+  font-size: 13px;
+}
+
+/* FORMULÁRIOS */
+label {
+  display: block;
+  font-size: 12px;
+  font-weight: bold;
+  margin-top: 8px;
+  margin-bottom: 3px;
+}
+
+input[type="text"], input[type="password"], input[type="date"], input[type="number"], select {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #aaa;
+  border-radius: 4px;
+  margin-bottom: 8px;
+  font-size: 12px;
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  border-radius: 4px;
+  padding: 9px 15px;
+  font-weight: bold;
+  font-size: 13px;
+}
+
+.btn-principal {
+  background-color: #003366;
+  color: white;
+  width: 100%;
+}
+
+.btn-principal:hover {
+  background-color: #002244;
+}
+
+.btn-sair {
+  background-color: #cc0000;
+  color: white;
+}
+
+.btn-sair:hover {
+  background-color: #990000;
+}
+
+/* GRID LAYOUT ADMIN */
+.secao-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.grid-form-aluno {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.card-formulario {
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 15px;
+  background-color: #f9f9f9;
+}
+
+.card-formulario h3 {
+  font-size: 15px;
+  color: #003366;
+  margin-bottom: 10px;
+}
+
+.card-formulario button {
+  background-color: #28a745;
+  color: white;
+  width: 100%;
+}
+
+.lista-cadastrados {
+  list-style: none;
+  margin-top: 12px;
+  max-height: 140px;
+  overflow-y: auto;
+  font-size: 12px;
+}
+
+.lista-cadastrados li {
+  padding: 4px 6px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+/* MODELO BETHAKAM (ESTILO PDF) */
+.documento-historico {
+  border: 2px solid #003366;
+  padding: 20px;
+  background: #fff;
+  border-radius: 4px;
+}
+
+.cabecalho-historico {
+  text-align: center;
+  border-bottom: 2px solid #003366;
+  padding-bottom: 10px;
+  margin-bottom: 15px;
+}
+
+.cabecalho-historico h2 {
+  color: #003366;
+  font-size: 20px;
+}
+
+.info-topo-bethakam {
+  display: flex;
+  justify-content: space-around;
+  margin: 8px 0;
+  font-size: 13px;
+  background: #f4f6f8;
+  padding: 6px;
+  border: 1px solid #ddd;
+}
+
+.cabecalho-historico h3 {
+  font-size: 14px;
+  color: #333;
+  margin-top: 6px;
+}
+
+.box-dados-aluno {
+  background-color: #f4f6f8;
+  border: 1px solid #ccc;
+  padding: 10px 15px;
+  border-radius: 4px;
+}
+
+.box-dados-aluno h4 {
+  font-size: 13px;
+  color: #003366;
+  margin-bottom: 8px;
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 4px;
+}
+
+.grid-dados {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+  font-size: 12px;
+}
+
+/* TABELAS */
+.tabela-wrapper {
+  overflow-x: auto;
+  margin-top: 10px;
+}
+
+.tabela-boletim {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  font-size: 12px;
+}
+
+.tabela-boletim th, .tabela-boletim td {
+  border: 1px solid #aaa;
+  padding: 6px 8px;
+  text-align: center;
+}
+
+.tabela-boletim th {
+  background-color: #003366;
+  color: white;
+  font-weight: bold;
+}
+
+.linha-periodo-header {
+  background-color: #e9ecef;
+  font-weight: bold;
+  text-align: left !important;
+  color: #003366;
+}
+
+.input-nota {
+  width: 70px;
+  padding: 4px;
+  text-align: center;
+  margin-bottom: 0;
+}
+
+.select-situacao {
+  width: 130px;
+  padding: 4px;
+  margin-bottom: 0;
+}
+
+.status-apvd {
+  color: green;
+  font-weight: bold;
+}
+
+.status-rpvd {
+  color: red;
+  font-weight: bold;
+}
+
+.legenda-historico {
+  margin-top: 15px;
+  font-size: 11px;
+  color: #555;
+  border-top: 1px solid #ccc;
+  padding-top: 8px;
+}

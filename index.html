@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CENTRO DE ESTUDOS BETHAKAM - Sistema Acadêmico</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- TELA DE LOGIN -->
+  <div id="tela-login" class="container-card">
+    <div class="cabecalho-institucional">
+      <h2>CENTRO DE ESTUDOS BETHAKAM</h2>
+      <p>Sistema de Gestão Acadêmica e Histórico Escolar</p>
+    </div>
+    
+    <h3>Acesso ao Sistema</h3>
+    
+    <label for="perfil-select">Selecione seu Perfil:</label>
+    <select id="perfil-select" onchange="atualizarOpcoesLogin()">
+      <option value="admin">Administrador</option>
+      <option value="secretario">Secretário</option>
+      <option value="professor">Professor</option>
+      <option value="aluno">Aluno</option>
+    </select>
+
+    <div id="campo-usuario-container">
+      <label id="label-usuario" for="usuario-input">Usuário:</label>
+      <input type="text" id="usuario-input" placeholder="Digite seu usuário">
+    </div>
+
+    <div id="campo-senha-container">
+      <label for="senha-input">Senha:</label>
+      <input type="password" id="senha-input" maxlength="8" placeholder="Digite sua senha">
+    </div>
+
+    <button class="btn-principal" onclick="fazerLogin()">Entrar no Sistema</button>
+  </div>
+
+  <!-- PAINEL ADMINISTRADOR E SECRETÁRIO -->
+  <div id="tela-admin" class="container-painel oculto">
+    <div class="topo-painel">
+      <h2 id="titulo-painel-gestao">Painel de Gestão Acadêmica</h2>
+      <button class="btn-sair" onclick="deslogar()">Sair</button>
+    </div>
+
+    <div class="secao-grid">
+      <!-- Cadastrar Professor (Apenas Admin) -->
+      <div class="card-formulario" id="box-cad-prof">
+        <h3>Cadastrar Professor</h3>
+        <input type="text" id="cad-prof-nome" placeholder="Nome Completo do Professor">
+        <button onclick="cadastrarProfessor()">Salvar Professor</button>
+        <ul id="lista-professores" class="lista-cadastrados"></ul>
+      </div>
+
+      <!-- Cadastrar Disciplina -->
+      <div class="card-formulario">
+        <h3>Cadastrar Disciplina</h3>
+        <input type="text" id="cad-disc-nome" placeholder="Nome da Disciplina">
+        <select id="cad-disc-periodo">
+          <option value="1">PERÍODO 1</option>
+          <option value="2">PERÍODO 2</option>
+          <option value="3">PERÍODO 3</option>
+          <option value="4">PERÍODO 4</option>
+          <option value="5">PERÍODO 5</option>
+          <option value="6">PERÍODO 6</option>
+          <option value="7">PERÍODO 7</option>
+          <option value="8">PERÍODO 8</option>
+        </select>
+        <input type="number" id="cad-disc-ch" placeholder="Carga Horária (ex: 60)">
+        <select id="cad-disc-prof"></select>
+        <button onclick="cadastrarDisciplina()">Salvar Disciplina</button>
+        <ul id="lista-disciplinas" class="lista-cadastrados"></ul>
+      </div>
+
+      <!-- Cadastrar Aluno -->
+      <div class="card-formulario" style="grid-column: span 2;">
+        <h3>Cadastrar Novo Aluno</h3>
+        <div class="grid-form-aluno">
+          <div>
+            <label>Nome Completo:</label>
+            <input type="text" id="cad-aluno-nome" placeholder="Nome do Aluno">
+          </div>
+          <div>
+            <label>E-mail:</label>
+            <input type="text" id="cad-aluno-email" placeholder="email@exemplo.com">
+          </div>
+          <div>
+            <label>CPF (Apenas números ou formatado):</label>
+            <input type="text" id="cad-aluno-cpf" placeholder="000.000.000-00">
+          </div>
+          <div>
+            <label>Senha de Acesso (Máx 8 dígitos):</label>
+            <input type="password" id="cad-aluno-senha" maxlength="8" placeholder="Senha de até 8 dígitos">
+          </div>
+          <div>
+            <label>Data de Nascimento:</label>
+            <input type="date" id="cad-aluno-nascimento">
+          </div>
+          <div>
+            <label>Polo do Aluno:</label>
+            <input type="text" id="cad-aluno-polo" placeholder="Ex: Anjo da Guarda">
+          </div>
+          <div>
+            <label>Turma do Aluno:</label>
+            <input type="text" id="cad-aluno-turma" placeholder="Ex: Segunda-Feira (Noturno)">
+          </div>
+          <div>
+            <label>Nacionalidade:</label>
+            <select id="cad-aluno-nacionalidade">
+              <option value="1. BRASILEIRO NATO">1. BRASILEIRO NATO</option>
+              <option value="2. BRASILEIRO NATURALIZADO">2. BRASILEIRO NATURALIZADO</option>
+              <option value="3. BRASILEIRO NASCIDO EM TERRITORIO ESTRANGERIO">3. BRASILEIRO NASCIDO EM TERRITORIO ESTRANGERIO</option>
+              <option value="4. ESTRANGEIRA">4. ESTRANGEIRA</option>
+            </select>
+          </div>
+          <div>
+            <label>Naturalidade (Cidade):</label>
+            <input type="text" id="cad-aluno-nat-cidade" placeholder="Nome da Cidade">
+          </div>
+          <div>
+            <label>Tipo de Divisão Territorial:</label>
+            <select id="cad-aluno-nat-tipo">
+              <option value="UNIDADE FEDERATIVA">1. UNIDADE FEDERATIVA</option>
+              <option value="PROVINCIA">2. PROVINCIA</option>
+              <option value="DEPARTAMENTO">3. DEPARTAMENTO</option>
+            </select>
+          </div>
+          <div>
+            <label>UF / Província / Departamento:</label>
+            <input type="text" id="cad-aluno-nat-uf" placeholder="Ex: Maranhão / MA">
+          </div>
+          <div>
+            <label>Sexo:</label>
+            <select id="cad-aluno-sexo">
+              <option value="FEMININO">1. FEMININO</option>
+              <option value="MASCULINO">2. MASCULINO</option>
+            </select>
+          </div>
+          <div>
+            <label>Nome do Pai:</label>
+            <input type="text" id="cad-aluno-pai" placeholder="Nome Completo do Pai">
+          </div>
+          <div>
+            <label>Nome da Mãe:</label>
+            <input type="text" id="cad-aluno-mae" placeholder="Nome Completo da Mãe">
+          </div>
+          <div>
+            <label>Forma de Ingresso:</label>
+            <select id="cad-aluno-ingresso">
+              <option value="PROCESSO SELETIVO">1. PROCESSO SELETIVO</option>
+            </select>
+          </div>
+          <div>
+            <label>Ano de Ingresso:</label>
+            <select id="cad-aluno-ano-ingresso"></select>
+          </div>
+          <div>
+            <label>Semestre de Ingresso:</label>
+            <select id="cad-aluno-semestre-ingresso">
+              <option value="1">1</option>
+              <option value="2">2</option>
+            </select>
+          </div>
+        </div>
+        <button onclick="cadastrarAluno()" style="margin-top: 15px;">Salvar Aluno e Gerar Matrícula</button>
+        <ul id="lista-alunos" class="lista-cadastrados"></ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAINEL PROFESSOR / LANÇAMENTO DE NOTAS -->
+  <div id="tela-professor" class="container-painel oculto">
+    <div class="topo-painel">
+      <h2 id="titulo-painel-lancamento">Lançamento de Nota Final e Situação</h2>
+      <button class="btn-sair" onclick="deslogar()">Sair</button>
+    </div>
+
+    <div class="filtro-secao">
+      <label for="prof-disciplina-select">Selecione a Disciplina para Lançamento:</label>
+      <select id="prof-disciplina-select" onchange="carregarTurmaProfessor()">
+        <option value="">-- Selecione uma disciplina --</option>
+      </select>
+    </div>
+
+    <div id="area-lancamento-prof" class="oculto" style="margin-top:20px;">
+      <h3>Alunos Matriculados</h3>
+      <div class="tabela-wrapper">
+        <table class="tabela-boletim">
+          <thead>
+            <tr>
+              <th>Matrícula</th>
+              <th>Nome do Aluno</th>
+              <th>Nota Final</th>
+              <th>Situação Final</th>
+            </tr>
+          </thead>
+          <tbody id="corpo-tabela-prof">
+            <!-- Gerado via JS -->
+          </tbody>
+        </table>
+      </div>
+      <button class="btn-principal" onclick="salvarNotasProfessor()" style="margin-top: 15px;">Salvar Lançamentos</button>
+    </div>
+  </div>
+
+  <!-- PAINEL ALUNO (HISTÓRICO ESCOLAR COMPLETO BETHAKAM) -->
+  <div id="tela-aluno" class="container-painel oculto">
+    <div class="topo-painel">
+      <h2>Histórico Escolar do Aluno</h2>
+      <button class="btn-sair" onclick="deslogar()">Sair</button>
+    </div>
+
+    <div class="documento-historico">
+      <div class="cabecalho-historico">
+        <h2>CENTRO DE ESTUDOS BETHAKAM</h2>
+        <div class="info-topo-bethakam">
+          <p><strong>POLO:</strong> <span id="hist-polo-header">-</span></p>
+          <p><strong>TURMA:</strong> <span id="hist-turma-header">-</span></p>
+        </div>
+        <h3>HISTÓRICO ESCOLAR</h3>
+      </div>
+
+      <div class="box-dados-aluno">
+        <h4>DADOS DO ALUNO</h4>
+        <div class="grid-dados">
+          <p><strong>Nº de Matrícula:</strong> <span id="hist-aluno-mat">-</span></p>
+          <p><strong>Nome:</strong> <span id="hist-aluno-nome">-</span></p>
+          <p><strong>CPF:</strong> <span id="hist-aluno-cpf">-</span></p>
+          <p><strong>E-mail:</strong> <span id="hist-aluno-email">-</span></p>
+          <p><strong>Data de Nascimento:</strong> <span id="hist-aluno-nascimento">-</span></p>
+          <p><strong>Nacionalidade:</strong> <span id="hist-aluno-nacionalidade">-</span></p>
+          <p><strong>Naturalidade:</strong> <span id="hist-aluno-naturalidade">-</span></p>
+          <p><strong>Sexo:</strong> <span id="hist-aluno-sexo">-</span></p>
+          <p><strong>Pai:</strong> <span id="hist-aluno-pai">-</span></p>
+          <p><strong>Mãe:</strong> <span id="hist-aluno-mae">-</span></p>
+        </div>
+        
+        <h4 style="margin-top: 10px;">INFORMAÇÕES ACADÊMICAS</h4>
+        <div class="grid-dados">
+          <p><strong>Forma de Ingresso:</strong> <span id="hist-aluno-ingresso">-</span></p>
+          <p><strong>Ano e Semestre de Ingresso:</strong> <span id="hist-aluno-ano-semestre">-</span></p>
+        </div>
+      </div>
+
+      <h4 style="margin-top: 15px; color: #003366;">PERFORMANCE ACADÊMICA</h4>
+      <div class="tabela-wrapper">
+        <table class="tabela-boletim">
+          <thead>
+            <tr>
+              <th>Período</th>
+              <th>Código / Nº</th>
+              <th>Disciplina</th>
+              <th>Carga Horária</th>
+              <th>Nota Final</th>
+              <th>Situação Final</th>
+            </tr>
+          </thead>
+          <tbody id="corpo-tabela-historico">
+            <!-- Gerado via JS -->
+          </tbody>
+        </table>
+      </div>
+
+      <div class="legenda-historico">
+        <p><strong>Legenda situação final:</strong> Aprovado - APVD | RPVD - Reprovado | TM - TRANCOU A MATRÍCULA</p>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
