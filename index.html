@@ -8,6 +8,22 @@
 </head>
 <body>
 
+  <!-- MODAL ALTERAR SENHA -->
+  <div id="modal-senha" class="modal-overlay oculto">
+    <div class="modal-conteudo">
+      <h3>Alterar Minha Senha</h3>
+      <p>Digite sua nova senha abaixo:</p>
+      <label for="nova-senha-input">Nova Senha (máx. 8 dígitos):</label>
+      <input type="password" id="nova-senha-input" maxlength="8" placeholder="Digite a nova senha">
+      <label for="confirma-senha-input">Confirme a Nova Senha:</label>
+      <input type="password" id="confirma-senha-input" maxlength="8" placeholder="Digite novamente">
+      <div class="modal-botoes">
+        <button class="btn-principal" onclick="salvarNovaSenha()">Salvar Nova Senha</button>
+        <button class="btn-sair" onclick="fecharModalSenha()">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
   <!-- TELA DE LOGIN -->
   <div id="tela-login" class="container-card">
     <div class="cabecalho-institucional">
@@ -36,29 +52,41 @@
     </div>
 
     <button id="btn-login" class="btn-principal" onclick="fazerLogin()">Entrar no Sistema</button>
-    <p id="msg-carregando" style="text-align: center; color: #003366; font-weight: bold; margin-top: 10px;">Conectando ao Banco de Dados...</p>
   </div>
 
-  <!-- PAINEL ADMINISTRADOR E SECRETÁRIO -->
+  <!-- PAINEL ADMIN E SECRETÁRIO -->
   <div id="tela-admin" class="container-painel oculto">
     <div class="topo-painel">
       <h2 id="titulo-painel-gestao">Painel de Gestão Acadêmica</h2>
-      <button class="btn-sair" onclick="deslogar()">Sair</button>
+      <div class="botoes-topo">
+        <button class="btn-senha" onclick="abrirModalSenha()">Alterar Minha Senha</button>
+        <button class="btn-sair" onclick="deslogar()">Sair</button>
+      </div>
     </div>
 
     <div class="secao-grid">
-      <!-- 1. Cadastrar Polo -->
+      <!-- Importar Excel -->
+      <div class="card-formulario" style="grid-column: span 2;">
+        <h3>Importar Histórico Modular via Excel (.xlsx ou .csv)</h3>
+        <p class="info-aviso">
+          A planilha deve conter os cabeçalhos: <strong>CPF, Nome, Mes, Ano, Disciplina, Professor, Nota</strong>
+        </p>
+        <input type="file" id="arquivo-excel" accept=".xlsx, .xls, .csv">
+        <button onclick="importarPlanilhaExcel()" style="margin-top: 10px;">Processar Planilha</button>
+      </div>
+
+      <!-- Cadastrar Polo -->
       <div class="card-formulario">
         <h3>1. Cadastrar Polo</h3>
-        <input type="text" id="cad-polo-nome" placeholder="Nome do Polo (Ex: Sede Principal)">
+        <input type="text" id="cad-polo-nome" placeholder="Nome do Polo">
         <button onclick="cadastrarPolo()">Salvar Polo</button>
         <ul id="lista-polos" class="lista-cadastrados"></ul>
       </div>
 
-      <!-- 2. Cadastrar Turma -->
+      <!-- Cadastrar Turma -->
       <div class="card-formulario">
         <h3>2. Cadastrar Turma</h3>
-        <input type="text" id="cad-turma-nome" placeholder="Nome da Turma (Ex: Turma A)">
+        <input type="text" id="cad-turma-nome" placeholder="Nome da Turma">
         <select id="cad-turma-polo">
           <option value="">Selecione o Polo primeiro</option>
         </select>
@@ -66,23 +94,22 @@
         <ul id="lista-turmas" class="lista-cadastrados"></ul>
       </div>
 
-      <!-- Cadastrar Professor (Apenas Admin) -->
+      <!-- Cadastrar Professor -->
       <div class="card-formulario" id="box-cad-prof">
         <h3>Cadastrar Professor</h3>
         <input type="text" id="cad-prof-nome" placeholder="Nome Completo do Professor">
+        <input type="password" id="cad-prof-senha" maxlength="8" placeholder="Senha (padrão: 12345678)">
         <button onclick="cadastrarProfessor()">Salvar Professor</button>
         <ul id="lista-professores" class="lista-cadastrados"></ul>
       </div>
 
-      <!-- Cadastrar Disciplina (Vinculada à Turma) -->
+      <!-- Cadastrar Disciplina -->
       <div class="card-formulario">
         <h3>Cadastrar Disciplina</h3>
         <input type="text" id="cad-disc-nome" placeholder="Nome da Disciplina">
-        
         <select id="cad-disc-turma">
           <option value="">Selecione a Turma primeiro</option>
         </select>
-
         <select id="cad-disc-periodo">
           <option value="1">PERÍODO 1</option>
           <option value="2">PERÍODO 2</option>
@@ -93,7 +120,6 @@
           <option value="7">PERÍODO 7</option>
           <option value="8">PERÍODO 8</option>
         </select>
-
         <div style="display: flex; gap: 10px; margin-bottom: 8px;">
           <input type="number" id="cad-disc-ano" placeholder="Ano (Ex: 2026)" style="margin-bottom: 0;">
           <select id="cad-disc-semestre" style="margin-bottom: 0;">
@@ -101,7 +127,6 @@
             <option value="2">Semestre 2</option>
           </select>
         </div>
-
         <input type="number" id="cad-disc-ch" placeholder="Carga Horária (ex: 60)">
         <select id="cad-disc-prof"></select>
         <button onclick="cadastrarDisciplina()">Salvar Disciplina</button>
@@ -121,19 +146,9 @@
             <input type="text" id="cad-aluno-email" placeholder="email@exemplo.com">
           </div>
           <div>
-            <label>CPF (Apenas números ou formatado):</label>
+            <label>CPF:</label>
             <input type="text" id="cad-aluno-cpf" placeholder="000.000.000-00">
           </div>
-          <div>
-            <label>Senha de Acesso (Máx 8 dígitos):</label>
-            <input type="password" id="cad-aluno-senha" maxlength="8" placeholder="Senha de até 8 dígitos">
-          </div>
-          <div>
-            <label>Data de Nascimento:</label>
-            <input type="date" id="cad-aluno-nascimento">
-          </div>
-          
-          <!-- AGORA POLO E TURMA SÃO CAIXAS DE SELEÇÃO! -->
           <div>
             <label>Polo do Aluno:</label>
             <select id="cad-aluno-polo">
@@ -146,76 +161,21 @@
               <option value="">Selecione a Turma</option>
             </select>
           </div>
-
-          <div>
-            <label>Nacionalidade:</label>
-            <select id="cad-aluno-nacionalidade">
-              <option value="1. BRASILEIRO NATO">1. BRASILEIRO NATO</option>
-              <option value="2. BRASILEIRO NATURALIZADO">2. BRASILEIRO NATURALIZADO</option>
-              <option value="3. BRASILEIRO NASCIDO EM TERRITORIO ESTRANGERIO">3. BRASILEIRO NASCIDO EM TERRITORIO ESTRANGERIO</option>
-              <option value="4. ESTRANGEIRA">4. ESTRANGEIRA</option>
-            </select>
-          </div>
-          <div>
-            <label>Naturalidade (Cidade):</label>
-            <input type="text" id="cad-aluno-nat-cidade" placeholder="Nome da Cidade">
-          </div>
-          <div>
-            <label>Tipo de Divisão Territorial:</label>
-            <select id="cad-aluno-nat-tipo">
-              <option value="UNIDADE FEDERATIVA">1. UNIDADE FEDERATIVA</option>
-              <option value="PROVINCIA">2. PROVINCIA</option>
-              <option value="DEPARTAMENTO">3. DEPARTAMENTO</option>
-            </select>
-          </div>
-          <div>
-            <label>UF / Província / Departamento:</label>
-            <input type="text" id="cad-aluno-nat-uf" placeholder="Ex: Maranhão / MA">
-          </div>
-          <div>
-            <label>Sexo:</label>
-            <select id="cad-aluno-sexo">
-              <option value="FEMININO">1. FEMININO</option>
-              <option value="MASCULINO">2. MASCULINO</option>
-            </select>
-          </div>
-          <div>
-            <label>Nome do Pai:</label>
-            <input type="text" id="cad-aluno-pai" placeholder="Nome Completo do Pai">
-          </div>
-          <div>
-            <label>Nome da Mãe:</label>
-            <input type="text" id="cad-aluno-mae" placeholder="Nome Completo da Mãe">
-          </div>
-          <div>
-            <label>Forma de Ingresso:</label>
-            <select id="cad-aluno-ingresso">
-              <option value="PROCESSO SELETIVO">1. PROCESSO SELETIVO</option>
-            </select>
-          </div>
-          <div>
-            <label>Ano de Ingresso:</label>
-            <select id="cad-aluno-ano-ingresso"></select>
-          </div>
-          <div>
-            <label>Semestre de Ingresso:</label>
-            <select id="cad-aluno-semestre-ingresso">
-              <option value="1">1</option>
-              <option value="2">2</option>
-            </select>
-          </div>
         </div>
-        <button onclick="cadastrarAluno()" style="margin-top: 15px;">Salvar Aluno e Gerar Matrícula</button>
+        <button onclick="cadastrarAluno()" style="margin-top: 15px;">Salvar Aluno e Gerar Matrícula/Senha</button>
         <ul id="lista-alunos" class="lista-cadastrados"></ul>
       </div>
     </div>
   </div>
 
-  <!-- PAINEL PROFESSOR / LANÇAMENTO DE NOTAS -->
+  <!-- PAINEL PROFESSOR -->
   <div id="tela-professor" class="container-painel oculto">
     <div class="topo-painel">
       <h2 id="titulo-painel-lancamento">Lançamento de Nota Final e Situação</h2>
-      <button class="btn-sair" onclick="deslogar()">Sair</button>
+      <div class="botoes-topo">
+        <button class="btn-senha" onclick="abrirModalSenha()">Alterar Minha Senha</button>
+        <button class="btn-sair" onclick="deslogar()">Sair</button>
+      </div>
     </div>
 
     <div class="filtro-secao">
@@ -226,7 +186,7 @@
     </div>
 
     <div id="area-lancamento-prof" class="oculto" style="margin-top:20px;">
-      <h3>Alunos Matriculados (Nesta Turma)</h3>
+      <h3>Alunos Matriculados</h3>
       <div class="tabela-wrapper">
         <table class="tabela-boletim">
           <thead>
@@ -237,20 +197,21 @@
               <th>Situação Final</th>
             </tr>
           </thead>
-          <tbody id="corpo-tabela-prof">
-            <!-- Gerado via JS -->
-          </tbody>
+          <tbody id="corpo-tabela-prof"></tbody>
         </table>
       </div>
       <button class="btn-principal" onclick="salvarNotasProfessor()" style="margin-top: 15px;">Salvar Lançamentos</button>
     </div>
   </div>
 
-  <!-- PAINEL ALUNO (HISTÓRICO ESCOLAR COMPLETO BETHAKAM) -->
+  <!-- PAINEL ALUNO -->
   <div id="tela-aluno" class="container-painel oculto">
     <div class="topo-painel">
       <h2>Histórico Escolar do Aluno</h2>
-      <button class="btn-sair" onclick="deslogar()">Sair</button>
+      <div class="botoes-topo">
+        <button class="btn-senha" onclick="abrirModalSenha()">Alterar Minha Senha</button>
+        <button class="btn-sair" onclick="deslogar()">Sair</button>
+      </div>
     </div>
 
     <div class="documento-historico">
@@ -260,7 +221,7 @@
           <p><strong>POLO:</strong> <span id="hist-polo-header">-</span></p>
           <p><strong>TURMA:</strong> <span id="hist-turma-header">-</span></p>
         </div>
-        <h3>HISTÓRICO ESCOLAR</h3>
+        <h3>HISTÓRICO ESCOLAR MODULAR</h3>
       </div>
 
       <div class="box-dados-aluno">
@@ -270,50 +231,32 @@
           <p><strong>Nome:</strong> <span id="hist-aluno-nome">-</span></p>
           <p><strong>CPF:</strong> <span id="hist-aluno-cpf">-</span></p>
           <p><strong>E-mail:</strong> <span id="hist-aluno-email">-</span></p>
-          <p><strong>Data de Nascimento:</strong> <span id="hist-aluno-nascimento">-</span></p>
-          <p><strong>Nacionalidade:</strong> <span id="hist-aluno-nacionalidade">-</span></p>
-          <p><strong>Naturalidade:</strong> <span id="hist-aluno-naturalidade">-</span></p>
-          <p><strong>Sexo:</strong> <span id="hist-aluno-sexo">-</span></p>
-          <p><strong>Pai:</strong> <span id="hist-aluno-pai">-</span></p>
-          <p><strong>Mãe:</strong> <span id="hist-aluno-mae">-</span></p>
-        </div>
-        
-        <h4 style="margin-top: 10px;">INFORMAÇÕES ACADÊMICAS</h4>
-        <div class="grid-dados">
-          <p><strong>Forma de Ingresso:</strong> <span id="hist-aluno-ingresso">-</span></p>
-          <p><strong>Ano e Semestre de Ingresso:</strong> <span id="hist-aluno-ano-semestre">-</span></p>
         </div>
       </div>
 
-      <h4 style="margin-top: 15px; color: #003366;">PERFORMANCE ACADÊMICA</h4>
+      <h4 style="margin-top: 15px; color: #003366;">DISCIPLINAS MINISTRADAS NO POLO</h4>
       <div class="tabela-wrapper">
         <table class="tabela-boletim">
           <thead>
             <tr>
-              <th>Ano/Semestre</th>
-              <th>Código / Nº</th>
-              <th>Disciplina</th>
-              <th>Carga Horária</th>
-              <th>Nota Final</th>
-              <th>Situação Final</th>
+              <th colspan="2">Início Módulo</th>
+              <th rowspan="2">Disciplinas Ministradas no Polo</th>
+              <th rowspan="2">Professor</th>
+              <th rowspan="2">Nota</th>
+            </tr>
+            <tr>
+              <th>Mês</th>
+              <th>Ano</th>
             </tr>
           </thead>
-          <tbody id="corpo-tabela-historico">
-            <!-- Gerado via JS -->
-          </tbody>
+          <tbody id="corpo-tabela-historico"></tbody>
         </table>
-      </div>
-
-      <div class="legenda-historico">
-        <p><strong>Legenda situação final:</strong> Aprovado - APVD | RPVD - Reprovado | TM - TRANCOU A MATRÍCULA</p>
       </div>
     </div>
   </div>
 
-  <!-- FIREBASE SCRIPTS -->
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-  
+  <!-- LEITOR EXCEL -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="script.js"></script>
 </body>
 </html>
