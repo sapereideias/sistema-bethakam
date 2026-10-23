@@ -1,98 +1,271 @@
-// A SUA CHAVE DO FIREBASE
-const firebaseConfig = {
-  apiKey: "AIzaSyDs09lCBfgpfkfRrH97DHWg6dD_6XVEa7c",
-  authDomain: "bethakam-pet.firebaseapp.com",
-  projectId: "bethakam-pet",
-  storageBucket: "bethakam-pet.firebasestorage.app",
-  messagingSenderId: "87176942051",
-  appId: "1:87176942051:web:6ee27387e14470d673d0d6"
-};
-
-// INICIALIZANDO O FIREBASE E O BANCO DE DADOS
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
-
-// VARIÁVEL QUE GUARDA TUDO NO SISTEMA
-let dados = {
-  polos: [],         // NOVO: Guarda os Polos
-  turmas: [],        // NOVO: Guarda as Turmas vinculadas aos Polos
+// BANCO DE DADOS LOCAL 100% INDEPENDENTE (localStorage)
+let dados = JSON.parse(localStorage.getItem('bethakam_local_db')) || {
+  polos: [],
+  turmas: [],
   professores: [],
   alunos: [],
   disciplinas: [],
-  notas: {}
+  notas: {},
+  credenciais: {
+    admin: "admin123",
+    secretario: "sec123"
+  }
 };
 
 let usuarioLogado = null;
 
-// FUNÇÃO MÁGICA QUE SALVA NA NUVEM
-function salvarNoFirebase(mensagemSucesso) {
-  db.collection("sistema").doc("bancoDeDados").set(dados)
-    .then(() => {
-      if(mensagemSucesso) alert(mensagemSucesso);
-    })
-    .catch((error) => {
-      alert("Erro ao salvar na nuvem: " + error);
-    });
+function salvarLocalmente(mensagemSucesso) {
+  localStorage.setItem('bethakam_local_db', JSON.stringify(dados));
+  if (mensagemSucesso) alert(mensagemSucesso);
 }
 
-// CARREGAMENTO COM TIMER DE SEGURANÇA (NUNCA TRAVA A TELA)
 window.onload = function() {
-  const btnLogin = document.getElementById('btn-login');
-  const msgCarregando = document.getElementById('msg-carregando');
-  
-  // 1. Timer de 3 segundos: Se o Firebase demorar, destrava o sistema automaticamente!
-  const timerSeguranca = setTimeout(() => {
-    if (msgCarregando) {
-      msgCarregando.innerText = "Modo de Teste / Local Ativado";
-      msgCarregando.style.color = "#d9534f";
-    }
-    if (btnLogin) btnLogin.disabled = false;
-    preencherAnosIngresso();
-    atualizarOpcoesLogin();
-  }, 3000);
-
-  try {
-    // 2. Tenta conectar ao Firebase
-    db.collection("sistema").doc("bancoDeDados").get().then((doc) => {
-      clearTimeout(timerSeguranca); // Cancela o timer porque a nuvem respondeu!
-      
-      if (doc.exists) {
-        const dadosNuvem = doc.data();
-        dados.polos = dadosNuvem.polos || [];
-        dados.turmas = dadosNuvem.turmas || [];
-        dados.professores = dadosNuvem.professores || [];
-        dados.alunos = dadosNuvem.alunos || [];
-        dados.disciplinas = dadosNuvem.disciplinas || [];
-        dados.notas = dadosNuvem.notas || {};
-        dados.credenciais = dadosNuvem.credenciais || { admin: "admin123", secretario: "sec123" };
-      } else {
-        salvarNoFirebase();
-      }
-      
-      if (msgCarregando) msgCarregando.classList.add('oculto');
-      if (btnLogin) btnLogin.disabled = false;
-      
-      preencherAnosIngresso();
-      renderizarListasAdmin();
-      atualizarOpcoesLogin();
-    }).catch((error) => {
-      clearTimeout(timerSeguranca);
-      console.error("Erro Firebase:", error);
-      if (msgCarregando) msgCarregando.classList.add('oculto');
-      if (btnLogin) btnLogin.disabled = false;
-      preencherAnosIngresso();
-      atualizarOpcoesLogin();
-    });
-  } catch (err) {
-    clearTimeout(timerSeguranca);
-    console.error("Erro no Script:", err);
-    if (msgCarregando) msgCarregando.classList.add('oculto');
-    if (btnLogin) btnLogin.disabled = false;
-    preencherAnosIngresso();
-    atualizarOpcoesLogin();
-  }
+  renderizarListasAdmin();
+  atualizarOpcoesLogin();
 };
-// TURMAS
+
+function atualizarOpcoesLogin() {
+  const perfil = document.getElementById('perfil-select').value;
+  const labelUsuario = document.getElementById('label-usuario');
+  const inputUsuario = document.getElementById('usuario-input');
+  const inputSenha = document.getElementById('senha-input');
+
+  inputUsuario.value = '';
+  inputSenha.value = '';
+
+  if (perfil === 'admin') {
+    labelUsuario.innerText = "Usuário do Administrador:";
+    inputUsuario.placeholder = "admin";
+  } else if (perfil === 'secretario') {
+    labelUsuario.innerText = "Usuário do Secretário:";
+    inputUsuario.placeholder = "secretario";
+  } else if (perfil === 'professor') {
+    labelUsuario.innerText = "Nome do Professor:";
+    inputUsuario.placeholder = "Digite o nome do Professor";
+  } else if (perfil === 'aluno') {
+    labelUsuario.innerText = "CPF ou E-mail do Aluno:";
+    inputUsuario.placeholder = "Digite seu CPF ou E-mail";
+  }
+}
+
+function fazerLogin() {
+  const perfil = document.getElementById('perfil-select').value;
+  const usuario = document.getElementById('usuario-input').value.trim();
+  const senha = document.getElementById('senha-input').value.trim();
+
+  if (!usuario || !senha) {
+    return alert("Preencha usuário/CPF/E-mail e senha!");
+  }
+
+  if (perfil === 'admin') {
+    if (usuario.toLowerCase() === 'admin' && senha === dados.credenciais.admin) {
+      usuarioLogado = { perfil: 'admin', identificador: 'admin' };
+      document.getElementById('tela-login').classList.add('oculto');
+      configurarTelaAdmin('Administrador');
+    } else {
+      alert("Usuário ou senha de Administrador incorretos!");
+    }
+  } else if (perfil === 'secretario') {
+    if (usuario.toLowerCase() === 'secretario' && senha === dados.credenciais.secretario) {
+      usuarioLogado = { perfil: 'secretario', identificador: 'secretario' };
+      document.getElementById('tela-login').classList.add('oculto');
+      configurarTelaAdmin('Secretário');
+    } else {
+      alert("Usuário ou senha de Secretário incorretos!");
+    }
+  } else if (perfil === 'professor') {
+    const prof = dados.professores.find(p => {
+      const nomeProf = typeof p === 'string' ? p : p.nome;
+      const senhaProf = typeof p === 'string' ? '12345678' : p.senha;
+      return nomeProf.toLowerCase() === usuario.toLowerCase() && senhaProf === senha;
+    });
+
+    if (prof) {
+      const nomeFinal = typeof prof === 'string' ? prof : prof.nome;
+      usuarioLogado = { perfil: 'professor', identificador: nomeFinal };
+      document.getElementById('tela-login').classList.add('oculto');
+      document.getElementById('tela-professor').classList.remove('oculto');
+      carregarSelectDisciplinasProf(nomeFinal);
+    } else {
+      alert("Professor não encontrado ou senha incorreta!");
+    }
+  } else if (perfil === 'aluno') {
+    const termoBusca = usuario.toLowerCase();
+    const cpfLimpoBusca = usuario.replace(/\D/g, '');
+
+    const aluno = dados.alunos.find(a => {
+      const matchEmail = a.email && a.email.toLowerCase() === termoBusca;
+      const matchCpf = a.cpf && a.cpf.replace(/\D/g, '') === cpfLimpoBusca && cpfLimpoBusca.length > 0;
+      return (matchEmail || matchCpf) && a.senha === senha;
+    });
+
+    if (!aluno) {
+      return alert("CPF/E-mail ou Senha incorretos!");
+    }
+
+    usuarioLogado = { perfil: 'aluno', identificador: aluno.matricula };
+    document.getElementById('tela-login').classList.add('oculto');
+    document.getElementById('tela-aluno').classList.remove('oculto');
+    carregarHistoricoAluno(aluno.matricula);
+  }
+}
+
+function configurarTelaAdmin(nomePerfil) {
+  document.getElementById('tela-admin').classList.remove('oculto');
+  document.getElementById('titulo-painel-gestao').innerText = `Painel de Gestão Acadêmica (${nomePerfil})`;
+  document.getElementById('box-cad-prof').style.display = (nomePerfil === 'Secretário') ? 'none' : 'block';
+  renderizarListasAdmin();
+}
+
+function deslogar() {
+  usuarioLogado = null;
+  document.getElementById('usuario-input').value = '';
+  document.getElementById('senha-input').value = '';
+  document.getElementById('tela-admin').classList.add('oculto');
+  document.getElementById('tela-professor').classList.add('oculto');
+  document.getElementById('tela-aluno').classList.add('oculto');
+  document.getElementById('tela-login').classList.remove('oculto');
+}
+
+function abrirModalSenha() {
+  document.getElementById('nova-senha-input').value = '';
+  document.getElementById('confirma-senha-input').value = '';
+  document.getElementById('modal-senha').classList.remove('oculto');
+}
+
+function fecharModalSenha() {
+  document.getElementById('modal-senha').classList.add('oculto');
+}
+
+function salvarNovaSenha() {
+  const novaSenha = document.getElementById('nova-senha-input').value.trim();
+  const confirmaSenha = document.getElementById('confirma-senha-input').value.trim();
+
+  if (!novaSenha) return alert("Digite a nova senha!");
+  if (novaSenha !== confirmaSenha) return alert("As senhas não coincidem!");
+
+  if (usuarioLogado.perfil === 'admin') {
+    dados.credenciais.admin = novaSenha;
+  } else if (usuarioLogado.perfil === 'secretario') {
+    dados.credenciais.secretario = novaSenha;
+  } else if (usuarioLogado.perfil === 'aluno') {
+    const aluno = dados.alunos.find(a => a.matricula === usuarioLogado.identificador);
+    if (aluno) aluno.senha = novaSenha;
+  }
+
+  fecharModalSenha();
+  salvarLocalmente("Senha alterada com sucesso!");
+}
+
+function cadastrarPolo() {
+  const nome = document.getElementById('cad-polo-nome').value.trim();
+  if (!nome) return alert('Digite o nome do polo!');
+  dados.polos.push(nome);
+  document.getElementById('cad-polo-nome').value = '';
+  renderizarListasAdmin();
+  salvarLocalmente('Polo cadastrado!');
+}
+
+function cadastrarTurma() {
+  const nome = document.getElementById('cad-turma-nome').value.trim();
+  const polo = document.getElementById('cad-turma-polo').value;
+  if (!nome || !polo) return alert('Preencha nome da turma e selecione o polo!');
+  dados.turmas.push({ id: Date.now(), nome: nome, polo: polo });
+  document.getElementById('cad-turma-nome').value = '';
+  renderizarListasAdmin();
+  salvarLocalmente('Turma cadastrada!');
+}
+
+function cadastrarProfessor() {
+  const nome = document.getElementById('cad-prof-nome').value.trim();
+  const senha = document.getElementById('cad-prof-senha').value.trim() || '12345678';
+  if (!nome) return alert('Digite o nome do professor!');
+  dados.professores.push({ nome: nome, senha: senha });
+  document.getElementById('cad-prof-nome').value = '';
+  document.getElementById('cad-prof-senha').value = '';
+  renderizarListasAdmin();
+  salvarLocalmente('Professor cadastrado!');
+}
+
+function cadastrarDisciplina() {
+  const nome = document.getElementById('cad-disc-nome').value.trim();
+  const turmaId = document.getElementById('cad-disc-turma').value;
+  const periodo = document.getElementById('cad-disc-periodo').value;
+  const ano = document.getElementById('cad-disc-ano').value.trim();
+  const semestre = document.getElementById('cad-disc-semestre').value;
+
+  if (!nome || !turmaId || !ano) return alert('Preencha nome, turma e ano!');
+
+  dados.disciplinas.push({
+    id: Date.now(),
+    nome: nome,
+    turmaId: turmaId,
+    periodo: periodo,
+    ano: ano,
+    semestre: semestre
+  });
+
+  document.getElementById('cad-disc-nome').value = '';
+  document.getElementById('cad-disc-ano').value = '';
+  renderizarListasAdmin();
+  salvarLocalmente('Disciplina cadastrada!');
+}
+
+function cadastrarAluno() {
+  const nome = document.getElementById('cad-aluno-nome').value.trim();
+  const email = document.getElementById('cad-aluno-email').value.trim();
+  const cpf = document.getElementById('cad-aluno-cpf').value.trim();
+  const polo = document.getElementById('cad-aluno-polo').value;
+  const turmaId = document.getElementById('cad-aluno-turma').value;
+
+  if (!nome || !cpf || !polo || !turmaId) {
+    return alert('Preencha Nome, CPF, Polo e Turma!');
+  }
+
+  const agora = new Date();
+  const ano = agora.getFullYear().toString();
+  const mes = String(agora.getMonth() + 1).padStart(2, '0');
+  const cpfLimpo = cpf.replace(/\D/g, '');
+  const matricula = `${ano}${mes}${cpfLimpo.substring(0, 5).padEnd(5, '0')}`;
+  const senhaAutomática = `${cpfLimpo.substring(0, 4).padEnd(4, '0')}${String(dados.alunos.length + 1).padStart(4, '0')}`;
+
+  dados.alunos.push({
+    matricula: matricula,
+    nome: nome,
+    email: email,
+    cpf: cpf,
+    senha: senhaAutomática,
+    polo: polo,
+    turma: turmaId,
+    historicoModular: []
+  });
+
+  renderizarListasAdmin();
+  salvarLocalmente(`Aluno Cadastrado!\n\nMatrícula: ${matricula}\nSenha: ${senhaAutomática}`);
+}
+
+function excluirAluno(matricula) {
+  if (!confirm("Deseja realmente excluir este aluno?")) return;
+  dados.alunos = dados.alunos.filter(a => a.matricula !== matricula);
+  renderizarListasAdmin();
+  salvarLocalmente("Aluno excluído com sucesso!");
+}
+
+function renderizarListasAdmin() {
+  const ulPolo = document.getElementById('lista-polos');
+  const selTurmaPolo = document.getElementById('cad-turma-polo');
+  const selAlunoPolo = document.getElementById('cad-aluno-polo');
+  
+  ulPolo.innerHTML = '';
+  selTurmaPolo.innerHTML = '<option value="">Selecione o Polo primeiro</option>';
+  selAlunoPolo.innerHTML = '<option value="">Selecione o Polo</option>';
+  
+  dados.polos.forEach(polo => {
+    ulPolo.innerHTML += `<li>${polo}</li>`;
+    selTurmaPolo.innerHTML += `<option value="${polo}">${polo}</option>`;
+    selAlunoPolo.innerHTML += `<option value="${polo}">${polo}</option>`;
+  });
+
   const ulTurma = document.getElementById('lista-turmas');
   const selDiscTurma = document.getElementById('cad-disc-turma');
   const selAlunoTurma = document.getElementById('cad-aluno-turma');
@@ -107,11 +280,10 @@ window.onload = function() {
     selAlunoTurma.innerHTML += `<option value="${t.id}">${t.nome}</option>`;
   });
 
-  // PROFESSORES
   const ulProf = document.getElementById('lista-professores');
   const selectProf = document.getElementById('cad-disc-prof');
   ulProf.innerHTML = '';
-  selectProf.innerHTML = '<option value="">Selecione o Professor (Opcional)</option>';
+  selectProf.innerHTML = '<option value="">Selecione o Professor</option>';
 
   dados.professores.forEach(prof => {
     const nome = typeof prof === 'string' ? prof : prof.nome;
@@ -119,119 +291,72 @@ window.onload = function() {
     selectProf.innerHTML += `<option value="${nome}">${nome}</option>`;
   });
 
-  // ALUNOS (Com botão de Excluir)
   const ulAluno = document.getElementById('lista-alunos');
   ulAluno.innerHTML = '';
-  if (dados.alunos.length === 0) {
-    ulAluno.innerHTML = '<li><em>Nenhum aluno cadastrado.</em></li>';
-  } else {
-    dados.alunos.forEach(a => {
-      ulAluno.innerHTML += `
-        <li style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-          <span><strong>Mat: ${a.matricula}</strong> - ${a.nome} | 🔑 Senha: <strong>${a.senha}</strong></span>
-          <button class="btn-sair" style="padding: 3px 8px; font-size: 11px; margin-left: 10px;" onclick="excluirAluno('${a.matricula}')">Excluir</button>
-        </li>
-      `;
-    });
-  }
-
-  // DISCIPLINAS
-  const ulDisc = document.getElementById('lista-disciplinas');
-  ulDisc.innerHTML = '';
-  if (dados.disciplinas.length === 0) {
-    ulDisc.innerHTML = '<li><em>Nenhuma disciplina cadastrada.</em></li>';
-  } else {
-    dados.disciplinas.forEach(d => {
-      const turmaObj = dados.turmas.find(t => t.id == d.turmaId);
-      const nomeTurma = turmaObj ? turmaObj.nome : "Sem Turma";
-      ulDisc.innerHTML += `<li>[${d.ano}.${d.semestre}] P${d.periodo} - ${d.nome} (Turma: ${nomeTurma})</li>`;
-    });
-  }
-}
-    // PROFESSOR / SECRETÁRIO / ADMIN - LANÇAMENTO DE NOTA FINAL
-function carregarSelectDisciplinasProf(nomeProf) {
-  const select = document.getElementById('prof-disciplina-select');
-  select.innerHTML = '<option value="">-- Selecione uma disciplina --</option>';
-
-  const discDoProf = dados.disciplinas.filter(d => d.professor.toLowerCase() === nomeProf.toLowerCase() || nomeProf === "");
-
-  discDoProf.forEach(d => {
-    const turmaObj = dados.turmas.find(t => t.id == d.turmaId);
-    const nomeTurma = turmaObj ? turmaObj.nome : "Sem Turma";
-    select.innerHTML += `<option value="${d.id}">${d.nome} - ${nomeTurma} (${d.ano}.${d.semestre})</option>`;
-  });
-}
-
-function carregarTurmaProfessor() {
-  const discId = document.getElementById('prof-disciplina-select').value;
-  const area = document.getElementById('area-lancamento-prof');
-
-  if (!discId) {
-    area.classList.add('oculto');
-    return;
-  }
-
-  const disciplinaSelecionada = dados.disciplinas.find(d => d.id == discId);
-  area.classList.remove('oculto');
-  const corpo = document.getElementById('corpo-tabela-prof');
-  corpo.innerHTML = '';
-
-  // Exibe apenas os alunos que pertencem à turma vinculada a esta disciplina
-  const alunosDaTurma = dados.alunos.filter(a => a.turma == disciplinaSelecionada.turmaId);
-
-  if (alunosDaTurma.length === 0) {
-    corpo.innerHTML = `<tr><td colspan="4">Nenhum aluno matriculado nesta turma.</td></tr>`;
-    return;
-  }
-
-  alunosDaTurma.forEach(aluno => {
-    const chave = `${aluno.matricula}_${discId}`;
-    const registro = dados.notas[chave] || { notaFinal: '', situacao: 'APVD' };
-
-    corpo.innerHTML += `
-      <tr>
-        <td>${aluno.matricula}</td>
-        <td>${aluno.nome}</td>
-        <td>
-          <input type="number" step="0.1" class="input-nota input-notafinal" data-mat="${aluno.matricula}" value="${registro.notaFinal}" placeholder="0.0">
-        </td>
-        <td>
-          <select class="select-situacao select-sitfinal" data-mat="${aluno.matricula}">
-            <option value="APVD" ${registro.situacao === 'APVD' ? 'selected' : ''}>Aprovado (APVD)</option>
-            <option value="RPVD" ${registro.situacao === 'RPVD' ? 'selected' : ''}>Reprovado (RPVD)</option>
-            <option value="TM" ${registro.situacao === 'TM' ? 'selected' : ''}>Trancou Matrícula (TM)</option>
-          </select>
-        </td>
-      </tr>
+  dados.alunos.forEach(a => {
+    ulAluno.innerHTML += `
+      <li style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+        <span><strong>Mat: ${a.matricula}</strong> - ${a.nome} | 🔑 Senha: ${a.senha}</span>
+        <button class="btn-sair" style="padding:2px 6px; font-size:10px;" onclick="excluirAluno('${a.matricula}')">Excluir</button>
+      </li>
     `;
   });
 }
 
-function salvarNotasProfessor() {
-  const discId = document.getElementById('prof-disciplina-select').value;
-  const disciplinaSelecionada = dados.disciplinas.find(d => d.id == discId);
-  const alunosDaTurma = dados.alunos.filter(a => a.turma == disciplinaSelecionada.turmaId);
+function importarPlanilhaExcel() {
+  const inputArquivo = document.getElementById('arquivo-excel');
+  const arquivo = inputArquivo.files[0];
+  if (!arquivo) return alert('Selecione uma planilha!');
 
-  alunosDaTurma.forEach(aluno => {
-    const inputNota = document.querySelector(`.input-notafinal[data-mat="${aluno.matricula}"]`);
-    const selectSit = document.querySelector(`.select-sitfinal[data-mat="${aluno.matricula}"]`);
+  const leitor = new FileReader();
+  leitor.onload = function(e) {
+    const data = new Uint8Array(e.target.result);
+    const workbook = XLSX.read(data, { type: 'array' });
+    const linhas = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
 
-    if (inputNota && selectSit) {
-      const notaVal = inputNota.value.trim();
-      const situacaoVal = selectSit.value;
+    let count = 0;
+    linhas.forEach(linha => {
+      const cpf = String(linha.CPF || linha.cpf || '').trim();
+      const nome = String(linha.Nome || linha.NOME || '').trim();
+      const mes = String(linha.Mes || linha.MES || '').trim();
+      const ano = String(linha.Ano || linha.ANO || '').trim();
+      const discNome = String(linha.Disciplina || linha.DISCIPLINA || '').trim();
+      const profNome = String(linha.Professor || linha.PROFESSOR || '—').trim();
+      const notaVal = linha.Nota !== undefined ? String(linha.Nota).trim() : '—';
 
-      const chave = `${aluno.matricula}_${discId}`;
-      dados.notas[chave] = {
-        notaFinal: notaVal !== '' ? parseFloat(notaVal).toFixed(1) : '-',
-        situacao: situacaoVal
-      };
-    }
-  });
+      if (!cpf || !discNome) return;
 
-  salvarNoFirebase('Nota Final e Situação salvas com sucesso na nuvem!');
+      const cpfLimpo = cpf.replace(/\D/g, '');
+      let aluno = dados.alunos.find(a => a.cpf.replace(/\D/g, '') === cpfLimpo);
+
+      if (!aluno) {
+        const agora = new Date();
+        const matricula = `${agora.getFullYear()}${String(agora.getMonth() + 1).padStart(2, '0')}${cpfLimpo.substring(0, 5).padEnd(5, '0')}`;
+        const senha = `${cpfLimpo.substring(0, 4).padEnd(4, '0')}${String(dados.alunos.length + 1).padStart(4, '0')}`;
+
+        aluno = {
+          matricula: matricula,
+          nome: nome || 'Aluno Importado',
+          cpf: cpf,
+          senha: senha,
+          polo: 'Sede Principal',
+          turma: 'Geral',
+          historicoModular: []
+        };
+        dados.alunos.push(aluno);
+      }
+
+      if (!aluno.historicoModular) aluno.historicoModular = [];
+      aluno.historicoModular.push({ mes, ano, disciplina: discNome, professor: profNome, nota: notaVal });
+      count++;
+    });
+
+    renderizarListasAdmin();
+    salvarLocalmente(`${count} registro(s) da planilha importados com sucesso!`);
+  };
+  leitor.readAsArrayBuffer(arquivo);
 }
 
-// VISUALIZAÇÃO DO HISTÓRICO DO ALUNO
 function carregarHistoricoAluno(matricula) {
   const aluno = dados.alunos.find(a => a.matricula === matricula);
   if (!aluno) return;
@@ -240,90 +365,27 @@ function carregarHistoricoAluno(matricula) {
   document.getElementById('hist-aluno-nome').innerText = aluno.nome;
   document.getElementById('hist-aluno-cpf').innerText = aluno.cpf;
   document.getElementById('hist-aluno-email').innerText = aluno.email || "-";
-  document.getElementById('hist-aluno-nascimento').innerText = aluno.nascimento || "-";
-  document.getElementById('hist-aluno-nacionalidade').innerText = aluno.nacionalidade || "-";
-  document.getElementById('hist-aluno-naturalidade').innerText = aluno.naturalidade || "-";
-  document.getElementById('hist-aluno-sexo').innerText = aluno.sexo || "-";
-  document.getElementById('hist-aluno-pai').innerText = aluno.pai || "-";
-  document.getElementById('hist-aluno-mae').innerText = aluno.mae || "-";
-  document.getElementById('hist-aluno-ingresso').innerText = aluno.ingresso || "-";
-  document.getElementById('hist-aluno-ano-semestre').innerText = aluno.anoSemestreIngresso || "-";
-
-  // Busca o nome da Turma baseada no ID salvo no aluno
-  const turmaObj = dados.turmas.find(t => t.id == aluno.turma);
-  document.getElementById('hist-polo-header').innerText = aluno.polo || "NÃO INFORMADO";
-  document.getElementById('hist-turma-header').innerText = turmaObj ? turmaObj.nome : "NÃO INFORMADA";
+  document.getElementById('hist-polo-header').innerText = aluno.polo || "Sede";
+  document.getElementById('hist-turma-header').innerText = aluno.turma || "Geral";
 
   const corpo = document.getElementById('corpo-tabela-historico');
   corpo.innerHTML = '';
 
-  // Filtra APENAS as disciplinas que pertencem à Turma deste aluno
-  const disciplinasDaTurma = dados.disciplinas.filter(d => d.turmaId == aluno.turma);
+  const lista = aluno.historicoModular || [];
+  if (lista.length === 0) {
+    corpo.innerHTML = `<tr><td colspan="5">Nenhuma disciplina cadastrada.</td></tr>`;
+    return;
+  }
 
-  for (let p = 1; p <= 8; p++) {
-    const disciplinasDoPeriodo = disciplinasDaTurma.filter(d => d.periodo == p);
-
+  lista.forEach(item => {
     corpo.innerHTML += `
       <tr>
-        <td colspan="6" class="linha-periodo-header">PERÍODO ${p}</td>
+        <td>${item.mes || '-'}</td>
+        <td>${item.ano || '-'}</td>
+        <td style="text-align:left;">${item.disciplina}</td>
+        <td>${item.professor || '—'}</td>
+        <td><strong>${item.nota || '—'}</strong></td>
       </tr>
     `;
-
-    if (disciplinasDoPeriodo.length === 0) {
-      corpo.innerHTML += `
-        <tr>
-          <td>-</td>
-          <td>-</td>
-          <td style="text-align:left;">Sem disciplinas cadastradas neste período</td>
-          <td>-</td>
-          <td>-</td>
-          <td>-</td>
-        </tr>
-      `;
-    } else {
-      disciplinasDoPeriodo.forEach(disc => {
-        const chave = `${aluno.matricula}_${disc.id}`;
-        const notaReg = dados.notas[chave] || { notaFinal: '-', situacao: 'TM' };
-
-        let classeStatus = '';
-        if (notaReg.situacao === 'APVD') classeStatus = 'status-apvd';
-        if (notaReg.situacao === 'RPVD') classeStatus = 'status-rpvd';
-
-        corpo.innerHTML += `
-          <tr>
-            <!-- AQUI ESTÁ A MÁGICA: O Ano e Semestre puxados da Disciplina! -->
-            <td>${disc.ano}.${disc.semestre}</td> 
-            <td>${disc.id}</td>
-            <td style="text-align:left;">${disc.nome}</td>
-            <td>${disc.ch}h</td>
-            <td><strong>${notaReg.notaFinal}</strong></td>
-            <td class="${classeStatus}">${notaReg.situacao}</td>
-          </tr>
-        `;
-      });
-    }
-  }
-}
-// FUNÇÃO PARA EXCLUIR ALUNO
-function excluirAluno(matricula) {
-  const aluno = dados.alunos.find(a => a.matricula === matricula);
-  if (!aluno) return;
-
-  // Pede confirmação antes de apagar
-  const confirmacao = confirm(`Tem certeza que deseja excluir o aluno ${aluno.nome} (Matrícula: ${matricula})?`);
-  if (!confirmacao) return;
-
-  // 1. Remove o aluno da lista
-  dados.alunos = dados.alunos.filter(a => a.matricula !== matricula);
-
-  // 2. Remove as notas associadas a este aluno
-  Object.keys(dados.notas).forEach(chave => {
-    if (chave.startsWith(`${matricula}_`)) {
-      delete dados.notas[chave];
-    }
   });
-
-  // 3. Atualiza a lista na tela e salva a alteração no Firebase
-  renderizarListasAdmin();
-  salvarNoFirebase("Aluno excluído com sucesso da nuvem!");
 }
