@@ -1,307 +1,391 @@
-* {
-  box-sizing: border-box;
-  font-family: Arial, Helvetica, sans-serif;
-  margin: 0;
-  padding: 0;
+// BANCO DE DADOS LOCAL 100% INDEPENDENTE (localStorage)
+let dados = JSON.parse(localStorage.getItem('bethakam_local_db')) || {
+  polos: [],
+  turmas: [],
+  professores: [],
+  alunos: [],
+  disciplinas: [],
+  notas: {},
+  credenciais: {
+    admin: "admin123",
+    secretario: "sec123"
+  }
+};
+
+let usuarioLogado = null;
+
+function salvarLocalmente(mensagemSucesso) {
+  localStorage.setItem('bethakam_local_db', JSON.stringify(dados));
+  if (mensagemSucesso) alert(mensagemSucesso);
 }
 
-body {
-  background-color: #eef2f5;
-  color: #222;
-  padding: 20px;
+window.onload = function() {
+  renderizarListasAdmin();
+  atualizarOpcoesLogin();
+};
+
+function atualizarOpcoesLogin() {
+  const perfil = document.getElementById('perfil-select').value;
+  const labelUsuario = document.getElementById('label-usuario');
+  const inputUsuario = document.getElementById('usuario-input');
+  const inputSenha = document.getElementById('senha-input');
+
+  inputUsuario.value = '';
+  inputSenha.value = '';
+
+  if (perfil === 'admin') {
+    labelUsuario.innerText = "Usuário do Administrador:";
+    inputUsuario.placeholder = "admin";
+  } else if (perfil === 'secretario') {
+    labelUsuario.innerText = "Usuário do Secretário:";
+    inputUsuario.placeholder = "secretario";
+  } else if (perfil === 'professor') {
+    labelUsuario.innerText = "Nome do Professor:";
+    inputUsuario.placeholder = "Digite o nome do Professor";
+  } else if (perfil === 'aluno') {
+    labelUsuario.innerText = "CPF ou E-mail do Aluno:";
+    inputUsuario.placeholder = "Digite seu CPF ou E-mail";
+  }
 }
 
-.oculto {
-  display: none !important;
+function fazerLogin() {
+  const perfil = document.getElementById('perfil-select').value;
+  const usuario = document.getElementById('usuario-input').value.trim();
+  const senha = document.getElementById('senha-input').value.trim();
+
+  if (!usuario || !senha) {
+    return alert("Preencha usuário/CPF/E-mail e senha!");
+  }
+
+  if (perfil === 'admin') {
+    if (usuario.toLowerCase() === 'admin' && senha === dados.credenciais.admin) {
+      usuarioLogado = { perfil: 'admin', identificador: 'admin' };
+      document.getElementById('tela-login').classList.add('oculto');
+      configurarTelaAdmin('Administrador');
+    } else {
+      alert("Usuário ou senha de Administrador incorretos!");
+    }
+  } else if (perfil === 'secretario') {
+    if (usuario.toLowerCase() === 'secretario' && senha === dados.credenciais.secretario) {
+      usuarioLogado = { perfil: 'secretario', identificador: 'secretario' };
+      document.getElementById('tela-login').classList.add('oculto');
+      configurarTelaAdmin('Secretário');
+    } else {
+      alert("Usuário ou senha de Secretário incorretos!");
+    }
+  } else if (perfil === 'professor') {
+    const prof = dados.professores.find(p => {
+      const nomeProf = typeof p === 'string' ? p : p.nome;
+      const senhaProf = typeof p === 'string' ? '12345678' : p.senha;
+      return nomeProf.toLowerCase() === usuario.toLowerCase() && senhaProf === senha;
+    });
+
+    if (prof) {
+      const nomeFinal = typeof prof === 'string' ? prof : prof.nome;
+      usuarioLogado = { perfil: 'professor', identificador: nomeFinal };
+      document.getElementById('tela-login').classList.add('oculto');
+      document.getElementById('tela-professor').classList.remove('oculto');
+      carregarSelectDisciplinasProf(nomeFinal);
+    } else {
+      alert("Professor não encontrado ou senha incorreta!");
+    }
+  } else if (perfil === 'aluno') {
+    const termoBusca = usuario.toLowerCase();
+    const cpfLimpoBusca = usuario.replace(/\D/g, '');
+
+    const aluno = dados.alunos.find(a => {
+      const matchEmail = a.email && a.email.toLowerCase() === termoBusca;
+      const matchCpf = a.cpf && a.cpf.replace(/\D/g, '') === cpfLimpoBusca && cpfLimpoBusca.length > 0;
+      return (matchEmail || matchCpf) && a.senha === senha;
+    });
+
+    if (!aluno) {
+      return alert("CPF/E-mail ou Senha incorretos!");
+    }
+
+    usuarioLogado = { perfil: 'aluno', identificador: aluno.matricula };
+    document.getElementById('tela-login').classList.add('oculto');
+    document.getElementById('tela-aluno').classList.remove('oculto');
+    carregarHistoricoAluno(aluno.matricula);
+  }
 }
 
-/* CARDS E PAINÉIS */
-.container-card {
-  background: #ffffff;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-  max-width: 480px;
-  margin: 40px auto;
-  padding: 25px;
+function configurarTelaAdmin(nomePerfil) {
+  document.getElementById('tela-admin').classList.remove('oculto');
+  document.getElementById('titulo-painel-gestao').innerText = `Painel de Gestão Acadêmica (${nomePerfil})`;
+  document.getElementById('box-cad-prof').style.display = (nomePerfil === 'Secretário') ? 'none' : 'block';
+  renderizarListasAdmin();
 }
 
-.container-painel {
-  background: #ffffff;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-  max-width: 1100px;
-  margin: 10px auto;
-  padding: 25px;
+function deslogar() {
+  usuarioLogado = null;
+  document.getElementById('usuario-input').value = '';
+  document.getElementById('senha-input').value = '';
+  document.getElementById('tela-admin').classList.add('oculto');
+  document.getElementById('tela-professor').classList.add('oculto');
+  document.getElementById('tela-aluno').classList.add('oculto');
+  document.getElementById('tela-login').classList.remove('oculto');
 }
 
-.topo-painel {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-bottom: 2px solid #003366;
-  padding-bottom: 12px;
-  margin-bottom: 20px;
+function abrirModalSenha() {
+  document.getElementById('nova-senha-input').value = '';
+  document.getElementById('confirma-senha-input').value = '';
+  document.getElementById('modal-senha').classList.remove('oculto');
 }
 
-.botoes-topo {
-  display: flex;
-  gap: 10px;
+function fecharModalSenha() {
+  document.getElementById('modal-senha').classList.add('oculto');
 }
 
-.cabecalho-institucional {
-  text-align: center;
-  border-bottom: 1px solid #ccc;
-  padding-bottom: 12px;
-  margin-bottom: 15px;
+function salvarNovaSenha() {
+  const novaSenha = document.getElementById('nova-senha-input').value.trim();
+  const confirmaSenha = document.getElementById('confirma-senha-input').value.trim();
+
+  if (!novaSenha) return alert("Digite a nova senha!");
+  if (novaSenha !== confirmaSenha) return alert("As senhas não coincidem!");
+
+  if (usuarioLogado.perfil === 'admin') {
+    dados.credenciais.admin = novaSenha;
+  } else if (usuarioLogado.perfil === 'secretario') {
+    dados.credenciais.secretario = novaSenha;
+  } else if (usuarioLogado.perfil === 'aluno') {
+    const aluno = dados.alunos.find(a => a.matricula === usuarioLogado.identificador);
+    if (aluno) aluno.senha = novaSenha;
+  }
+
+  fecharModalSenha();
+  salvarLocalmente("Senha alterada com sucesso!");
 }
 
-.cabecalho-institucional h2 {
-  color: #003366;
-  font-size: 18px;
-  font-weight: bold;
+function cadastrarPolo() {
+  const nome = document.getElementById('cad-polo-nome').value.trim();
+  if (!nome) return alert('Digite o nome do polo!');
+  dados.polos.push(nome);
+  document.getElementById('cad-polo-nome').value = '';
+  renderizarListasAdmin();
+  salvarLocalmente('Polo cadastrado!');
 }
 
-.cabecalho-institucional p {
-  color: #444;
-  font-size: 13px;
+function cadastrarTurma() {
+  const nome = document.getElementById('cad-turma-nome').value.trim();
+  const polo = document.getElementById('cad-turma-polo').value;
+  if (!nome || !polo) return alert('Preencha nome da turma e selecione o polo!');
+  dados.turmas.push({ id: Date.now(), nome: nome, polo: polo });
+  document.getElementById('cad-turma-nome').value = '';
+  renderizarListasAdmin();
+  salvarLocalmente('Turma cadastrada!');
 }
 
-label {
-  display: block;
-  font-size: 12px;
-  font-weight: bold;
-  margin-top: 8px;
-  margin-bottom: 3px;
+function cadastrarProfessor() {
+  const nome = document.getElementById('cad-prof-nome').value.trim();
+  const senha = document.getElementById('cad-prof-senha').value.trim() || '12345678';
+  if (!nome) return alert('Digite o nome do professor!');
+  dados.professores.push({ nome: nome, senha: senha });
+  document.getElementById('cad-prof-nome').value = '';
+  document.getElementById('cad-prof-senha').value = '';
+  renderizarListasAdmin();
+  salvarLocalmente('Professor cadastrado!');
 }
 
-input[type="text"], input[type="password"], input[type="date"], input[type="number"], select {
-  width: 100%;
-  padding: 8px;
-  border: 1px solid #aaa;
-  border-radius: 4px;
-  margin-bottom: 8px;
-  font-size: 12px;
+function cadastrarDisciplina() {
+  const nome = document.getElementById('cad-disc-nome').value.trim();
+  const turmaId = document.getElementById('cad-disc-turma').value;
+  const periodo = document.getElementById('cad-disc-periodo').value;
+  const ano = document.getElementById('cad-disc-ano').value.trim();
+  const semestre = document.getElementById('cad-disc-semestre').value;
+
+  if (!nome || !turmaId || !ano) return alert('Preencha nome, turma e ano!');
+
+  dados.disciplinas.push({
+    id: Date.now(),
+    nome: nome,
+    turmaId: turmaId,
+    periodo: periodo,
+    ano: ano,
+    semestre: semestre
+  });
+
+  document.getElementById('cad-disc-nome').value = '';
+  document.getElementById('cad-disc-ano').value = '';
+  renderizarListasAdmin();
+  salvarLocalmente('Disciplina cadastrada!');
 }
 
-button {
-  cursor: pointer;
-  border: none;
-  border-radius: 4px;
-  padding: 9px 15px;
-  font-weight: bold;
-  font-size: 13px;
+function cadastrarAluno() {
+  const nome = document.getElementById('cad-aluno-nome').value.trim();
+  const email = document.getElementById('cad-aluno-email').value.trim();
+  const cpf = document.getElementById('cad-aluno-cpf').value.trim();
+  const polo = document.getElementById('cad-aluno-polo').value;
+  const turmaId = document.getElementById('cad-aluno-turma').value;
+
+  if (!nome || !cpf || !polo || !turmaId) {
+    return alert('Preencha Nome, CPF, Polo e Turma!');
+  }
+
+  const agora = new Date();
+  const ano = agora.getFullYear().toString();
+  const mes = String(agora.getMonth() + 1).padStart(2, '0');
+  const cpfLimpo = cpf.replace(/\D/g, '');
+  const matricula = `${ano}${mes}${cpfLimpo.substring(0, 5).padEnd(5, '0')}`;
+  const senhaAutomática = `${cpfLimpo.substring(0, 4).padEnd(4, '0')}${String(dados.alunos.length + 1).padStart(4, '0')}`;
+
+  dados.alunos.push({
+    matricula: matricula,
+    nome: nome,
+    email: email,
+    cpf: cpf,
+    senha: senhaAutomática,
+    polo: polo,
+    turma: turmaId,
+    historicoModular: []
+  });
+
+  renderizarListasAdmin();
+  salvarLocalmente(`Aluno Cadastrado!\n\nMatrícula: ${matricula}\nSenha: ${senhaAutomática}`);
 }
 
-.btn-principal {
-  background-color: #003366;
-  color: white;
-  width: 100%;
+function excluirAluno(matricula) {
+  if (!confirm("Deseja realmente excluir este aluno?")) return;
+  dados.alunos = dados.alunos.filter(a => a.matricula !== matricula);
+  renderizarListasAdmin();
+  salvarLocalmente("Aluno excluído com sucesso!");
 }
 
-.btn-principal:hover {
-  background-color: #002244;
+function renderizarListasAdmin() {
+  const ulPolo = document.getElementById('lista-polos');
+  const selTurmaPolo = document.getElementById('cad-turma-polo');
+  const selAlunoPolo = document.getElementById('cad-aluno-polo');
+  
+  ulPolo.innerHTML = '';
+  selTurmaPolo.innerHTML = '<option value="">Selecione o Polo primeiro</option>';
+  selAlunoPolo.innerHTML = '<option value="">Selecione o Polo</option>';
+  
+  dados.polos.forEach(polo => {
+    ulPolo.innerHTML += `<li>${polo}</li>`;
+    selTurmaPolo.innerHTML += `<option value="${polo}">${polo}</option>`;
+    selAlunoPolo.innerHTML += `<option value="${polo}">${polo}</option>`;
+  });
+
+  const ulTurma = document.getElementById('lista-turmas');
+  const selDiscTurma = document.getElementById('cad-disc-turma');
+  const selAlunoTurma = document.getElementById('cad-aluno-turma');
+
+  ulTurma.innerHTML = '';
+  selDiscTurma.innerHTML = '<option value="">Selecione a Turma</option>';
+  selAlunoTurma.innerHTML = '<option value="">Selecione a Turma</option>';
+
+  dados.turmas.forEach(t => {
+    ulTurma.innerHTML += `<li>${t.nome} (Polo: ${t.polo})</li>`;
+    selDiscTurma.innerHTML += `<option value="${t.id}">${t.nome}</option>`;
+    selAlunoTurma.innerHTML += `<option value="${t.id}">${t.nome}</option>`;
+  });
+
+  const ulProf = document.getElementById('lista-professores');
+  const selectProf = document.getElementById('cad-disc-prof');
+  ulProf.innerHTML = '';
+  selectProf.innerHTML = '<option value="">Selecione o Professor</option>';
+
+  dados.professores.forEach(prof => {
+    const nome = typeof prof === 'string' ? prof : prof.nome;
+    ulProf.innerHTML += `<li>${nome}</li>`;
+    selectProf.innerHTML += `<option value="${nome}">${nome}</option>`;
+  });
+
+  const ulAluno = document.getElementById('lista-alunos');
+  ulAluno.innerHTML = '';
+  dados.alunos.forEach(a => {
+    ulAluno.innerHTML += `
+      <li style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+        <span><strong>Mat: ${a.matricula}</strong> - ${a.nome} | 🔑 Senha: ${a.senha}</span>
+        <button class="btn-sair" style="padding:2px 6px; font-size:10px;" onclick="excluirAluno('${a.matricula}')">Excluir</button>
+      </li>
+    `;
+  });
 }
 
-.btn-sair {
-  background-color: #cc0000;
-  color: white;
+function importarPlanilhaExcel() {
+  const inputArquivo = document.getElementById('arquivo-excel');
+  const arquivo = inputArquivo.files[0];
+  if (!arquivo) return alert('Selecione uma planilha!');
+
+  const leitor = new FileReader();
+  leitor.onload = function(e) {
+    const data = new Uint8Array(e.target.result);
+    const workbook = XLSX.read(data, { type: 'array' });
+    const linhas = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
+
+    let count = 0;
+    linhas.forEach(linha => {
+      const cpf = String(linha.CPF || linha.cpf || '').trim();
+      const nome = String(linha.Nome || linha.NOME || '').trim();
+      const mes = String(linha.Mes || linha.MES || '').trim();
+      const ano = String(linha.Ano || linha.ANO || '').trim();
+      const discNome = String(linha.Disciplina || linha.DISCIPLINA || '').trim();
+      const profNome = String(linha.Professor || linha.PROFESSOR || '—').trim();
+      const notaVal = linha.Nota !== undefined ? String(linha.Nota).trim() : '—';
+
+      if (!cpf || !discNome) return;
+
+      const cpfLimpo = cpf.replace(/\D/g, '');
+      let aluno = dados.alunos.find(a => a.cpf.replace(/\D/g, '') === cpfLimpo);
+
+      if (!aluno) {
+        const agora = new Date();
+        const matricula = `${agora.getFullYear()}${String(agora.getMonth() + 1).padStart(2, '0')}${cpfLimpo.substring(0, 5).padEnd(5, '0')}`;
+        const senha = `${cpfLimpo.substring(0, 4).padEnd(4, '0')}${String(dados.alunos.length + 1).padStart(4, '0')}`;
+
+        aluno = {
+          matricula: matricula,
+          nome: nome || 'Aluno Importado',
+          cpf: cpf,
+          senha: senha,
+          polo: 'Sede Principal',
+          turma: 'Geral',
+          historicoModular: []
+        };
+        dados.alunos.push(aluno);
+      }
+
+      if (!aluno.historicoModular) aluno.historicoModular = [];
+      aluno.historicoModular.push({ mes, ano, disciplina: discNome, professor: profNome, nota: notaVal });
+      count++;
+    });
+
+    renderizarListasAdmin();
+    salvarLocalmente(`${count} registro(s) da planilha importados com sucesso!`);
+  };
+  leitor.readAsArrayBuffer(arquivo);
 }
 
-.btn-sair:hover {
-  background-color: #990000;
-}
+function carregarHistoricoAluno(matricula) {
+  const aluno = dados.alunos.find(a => a.matricula === matricula);
+  if (!aluno) return;
 
-.btn-senha {
-  background-color: #f0ad4e;
-  color: #222;
-}
+  document.getElementById('hist-aluno-mat').innerText = aluno.matricula;
+  document.getElementById('hist-aluno-nome').innerText = aluno.nome;
+  document.getElementById('hist-aluno-cpf').innerText = aluno.cpf;
+  document.getElementById('hist-aluno-email').innerText = aluno.email || "-";
+  document.getElementById('hist-polo-header').innerText = aluno.polo || "Sede";
+  document.getElementById('hist-turma-header').innerText = aluno.turma || "Geral";
 
-.btn-senha:hover {
-  background-color: #ec971f;
-}
+  const corpo = document.getElementById('corpo-tabela-historico');
+  corpo.innerHTML = '';
 
-.info-aviso {
-  font-size: 11px;
-  color: #003366;
-  background-color: #e6f2ff;
-  padding: 8px;
-  border-left: 3px solid #003366;
-  margin-bottom: 12px;
-}
+  const lista = aluno.historicoModular || [];
+  if (lista.length === 0) {
+    corpo.innerHTML = `<tr><td colspan="5">Nenhuma disciplina cadastrada.</td></tr>`;
+    return;
+  }
 
-.secao-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 20px;
-}
-
-.grid-form-aluno {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 10px;
-}
-
-.card-formulario {
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  padding: 15px;
-  background-color: #f9f9f9;
-}
-
-.card-formulario h3 {
-  font-size: 15px;
-  color: #003366;
-  margin-bottom: 10px;
-}
-
-.card-formulario button {
-  background-color: #28a745;
-  color: white;
-  width: 100%;
-}
-
-.lista-cadastrados {
-  list-style: none;
-  margin-top: 12px;
-  max-height: 140px;
-  overflow-y: auto;
-  font-size: 12px;
-}
-
-.lista-cadastrados li {
-  padding: 4px 6px;
-  border-bottom: 1px solid #e0e0e0;
-}
-
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.6);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-}
-
-.modal-conteudo {
-  background: white;
-  padding: 25px;
-  border-radius: 8px;
-  width: 90%;
-  max-width: 400px;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-}
-
-.modal-conteudo h3 {
-  color: #003366;
-  margin-bottom: 8px;
-}
-
-.modal-conteudo p {
-  font-size: 12px;
-  color: #666;
-  margin-bottom: 15px;
-}
-
-.modal-botoes {
-  display: flex;
-  gap: 10px;
-  margin-top: 15px;
-}
-
-.documento-historico {
-  border: 2px solid #003366;
-  padding: 20px;
-  background: #fff;
-  border-radius: 4px;
-}
-
-.cabecalho-historico {
-  text-align: center;
-  border-bottom: 2px solid #003366;
-  padding-bottom: 10px;
-  margin-bottom: 15px;
-}
-
-.cabecalho-historico h2 {
-  color: #003366;
-  font-size: 20px;
-}
-
-.info-topo-bethakam {
-  display: flex;
-  justify-content: space-around;
-  margin: 8px 0;
-  font-size: 13px;
-  background: #f4f6f8;
-  padding: 6px;
-  border: 1px solid #ddd;
-}
-
-.cabecalho-historico h3 {
-  font-size: 14px;
-  color: #333;
-  margin-top: 6px;
-}
-
-.box-dados-aluno {
-  background-color: #f4f6f8;
-  border: 1px solid #ccc;
-  padding: 10px 15px;
-  border-radius: 4px;
-}
-
-.box-dados-aluno h4 {
-  font-size: 13px;
-  color: #003366;
-  margin-bottom: 8px;
-  border-bottom: 1px solid #ddd;
-  padding-bottom: 4px;
-}
-
-.grid-dados {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 6px;
-  font-size: 12px;
-}
-
-.tabela-wrapper {
-  overflow-x: auto;
-  margin-top: 10px;
-}
-
-.tabela-boletim {
-  width: 100%;
-  border-collapse: collapse;
-  background: #fff;
-  font-size: 12px;
-}
-
-.tabela-boletim th, .tabela-boletim td {
-  border: 1px solid #aaa;
-  padding: 6px 8px;
-  text-align: center;
-}
-
-.tabela-boletim th {
-  background-color: #003366;
-  color: white;
-  font-weight: bold;
-}
-
-.input-nota {
-  width: 70px;
-  padding: 4px;
-  text-align: center;
-  margin-bottom: 0;
-}
-
-.select-situacao {
-  width: 130px;
-  padding: 4px;
-  margin-bottom: 0;
+  lista.forEach(item => {
+    corpo.innerHTML += `
+      <tr>
+        <td>${item.mes || '-'}</td>
+        <td>${item.ano || '-'}</td>
+        <td style="text-align:left;">${item.disciplina}</td>
+        <td>${item.professor || '—'}</td>
+        <td><strong>${item.nota || '—'}</strong></td>
+      </tr>
+    `;
+  });
 }
